@@ -5,7 +5,7 @@ import PrimaryButton from '../components/PrimaryButton';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 
-export default function RegisterScreen({ navigation }) {
+export default function RegisterScreen({ navigation, onAuthenticated }) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,8 +39,8 @@ export default function RegisterScreen({ navigation }) {
           value={password}
           onChangeText={setPassword}
         />
-        {/* Submission is not wired to auth logic yet — Sprint 1 is UI only. */}
-        <PrimaryButton title="Register" onPress={() => {}} />
+        {/* No real auth call — Sprint 1 simulates a successful registration to demo navigation. */}
+        <PrimaryButton title="Register" onPress={onAuthenticated} />
         <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
           Already have an account? Log In
         </Text>

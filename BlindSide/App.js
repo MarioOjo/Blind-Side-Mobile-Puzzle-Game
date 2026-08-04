@@ -4,7 +4,7 @@ import { Poppins_700Bold, Poppins_600SemiBold } from '@expo-google-fonts/poppins
 import { Inter_400Regular } from '@expo-google-fonts/inter';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import AuthStack from './src/navigation/AuthStack';
+import RootNavigator from './src/navigation/RootNavigator';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -21,11 +21,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <AuthStack />
+        <RootNavigator />
         <StatusBar style="light" />
       </NavigationContainer>
     </SafeAreaProvider>
   );
 }
+
 
 

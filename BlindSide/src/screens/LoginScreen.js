@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
+import shadows from '../theme/shadows';
 
 export default function LoginScreen({ navigation, onAuthenticated }) {
   const [email, setEmail] = useState('');
@@ -11,31 +13,47 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>BLINDSIDE</Text>
+      <View style={[styles.logoBadge, shadows.glowCyan]}>
+        <Ionicons name="extension-puzzle" size={32} color={colors.neonCyan} />
+      </View>
+      <Text style={styles.logo}>
+        BLIND<Text style={styles.logoAccent}>SIDE</Text>
+      </Text>
       <Text style={styles.tagline}>Race. Reveal. Challenge.</Text>
       <Card style={styles.card}>
         <Text style={styles.heading}>Log In</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor={colors.white}
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor={colors.white}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.inputRow}>
+          <Ionicons name="person-outline" size={18} color={colors.neonCyan} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Username or Email"
+            placeholderTextColor={colors.white}
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
+        </View>
+        <View style={styles.inputRow}>
+          <Ionicons name="lock-closed-outline" size={18} color={colors.neonCyan} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor={colors.white}
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+        </View>
         {/* No real auth call — Sprint 1 simulates a successful login to demo navigation. */}
         <PrimaryButton title="Log In" onPress={onAuthenticated} />
-        <Text style={styles.link} onPress={() => navigation.navigate('Register')}>
-          Don&apos;t have an account? Register
-        </Text>
+        {/* Decorative only — password reset is not implemented this sprint. */}
+        <Text style={styles.forgotLink}>Forgot Password?</Text>
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
+        </View>
+        <PrimaryButton title="Create Account" variant="outline" onPress={() => navigation.navigate('Register')} />
       </Card>
     </View>
   );
@@ -47,18 +65,33 @@ const styles = StyleSheet.create({
     backgroundColor: colors.midnightNavy,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 24,
+    gap: 12,
     padding: 24,
   },
+  logoBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.midnightNavy,
+    borderWidth: 1.5,
+    borderColor: colors.neonCyan,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
   logo: {
-    color: colors.neonCyan,
+    color: colors.white,
     fontFamily: typography.logo,
-    fontSize: 28,
+    fontSize: 26,
+  },
+  logoAccent: {
+    color: colors.neonCyan,
   },
   tagline: {
     color: colors.white,
     fontFamily: typography.body,
     fontSize: 14,
+    marginBottom: 12,
   },
   card: {
     width: '100%',
@@ -69,21 +102,44 @@ const styles = StyleSheet.create({
     fontFamily: typography.heading,
     fontSize: 18,
   },
-  input: {
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.electricBlue,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 12,
+  },
+  inputIcon: {
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
     paddingVertical: 10,
     color: colors.white,
     fontFamily: typography.body,
     minHeight: 44,
   },
-  link: {
+  forgotLink: {
     color: colors.neonCyan,
     fontFamily: typography.body,
     textAlign: 'center',
-    marginTop: 4,
+    fontSize: 13,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.electricBlue,
+  },
+  dividerText: {
+    color: colors.white,
+    fontFamily: typography.body,
+    fontSize: 12,
   },
 });
 

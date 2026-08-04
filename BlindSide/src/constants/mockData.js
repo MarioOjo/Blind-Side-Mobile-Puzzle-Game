@@ -1,6 +1,7 @@
 // Sample data for the Home Dashboard and Profile screens until Firestore is wired up.
 export const mockUser = {
   username: 'Alex Johnson',
+  rank: 'Gold',
   wins: 12,
   losses: 5,
   bestTimeSeconds: 47,

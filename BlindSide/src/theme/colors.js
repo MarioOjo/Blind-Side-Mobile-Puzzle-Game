@@ -5,6 +5,9 @@ const colors = {
   neonCyan: '#06B6D4',
   victoryGold: '#FACC15',
   white: '#FFFFFF',
+  gradients: {
+    primary: ['#2563EB', '#06B6D4'],
+  },
 };
 
 export default colors;

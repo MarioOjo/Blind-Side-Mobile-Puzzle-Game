@@ -7,7 +7,7 @@ export const mockUser = {
 };
 
 export const mockChallenges = [
-  { id: '1', opponent: 'Jordan', category: 'Places', status: 'pending' },
-  { id: '2', opponent: 'Sam', category: 'Characters', status: 'won' },
-  { id: '3', opponent: 'Riley', category: 'People', status: 'lost' },
+  { id: '1', opponent: 'Jordan', category: 'Places', status: 'pending', time: '--:--' },
+  { id: '2', opponent: 'Sam', category: 'Characters', status: 'won', time: '01:16' },
+  { id: '3', opponent: 'Riley', category: 'People', status: 'lost', time: '01:23' },
 ];

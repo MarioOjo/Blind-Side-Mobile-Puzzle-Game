@@ -1,0 +1,65 @@
+import { View, Text, StyleSheet } from 'react-native';
+import colors from '../theme/colors';
+import typography from '../theme/typography';
+
+const STATUS_STYLES = {
+  won: { label: 'Won', color: colors.victoryGold },
+  lost: { label: 'Lost', color: '#F87171' },
+  pending: { label: 'Pending', color: colors.neonCyan },
+};
+
+export default function ChallengeListItem({ opponent, status, time }) {
+  const statusStyle = STATUS_STYLES[status] ?? STATUS_STYLES.pending;
+
+  return (
+    <View style={styles.row}>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{opponent.charAt(0).toUpperCase()}</Text>
+      </View>
+      <View style={styles.info}>
+        <Text style={styles.opponent}>{opponent}</Text>
+        <Text style={[styles.status, { color: statusStyle.color }]}>{statusStyle.label}</Text>
+      </View>
+      <Text style={styles.time}>{time}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.electricBlue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: colors.white,
+    fontFamily: typography.subheading,
+    fontSize: 16,
+  },
+  info: {
+    flex: 1,
+    gap: 2,
+  },
+  opponent: {
+    color: colors.white,
+    fontFamily: typography.subheading,
+    fontSize: 15,
+  },
+  status: {
+    fontFamily: typography.body,
+    fontSize: 12,
+  },
+  time: {
+    color: colors.white,
+    fontFamily: typography.body,
+    fontSize: 13,
+  },
+});

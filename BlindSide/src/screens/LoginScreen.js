@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
+import GoogleButton from '../components/GoogleButton';
 import PuzzleMark from '../components/PuzzleMark';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
@@ -54,6 +55,8 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
           <Text style={styles.dividerText}>OR</Text>
           <View style={styles.dividerLine} />
         </View>
+        {/* Visual only — no real Google OAuth, reuses the Log In button's placeholder behavior. */}
+        <GoogleButton onPress={onAuthenticated} />
         <PrimaryButton title="Create Account" variant="outline" onPress={() => navigation.navigate('Register')} />
       </Card>
     </View>

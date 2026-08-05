@@ -8,7 +8,7 @@ const STATUS_STYLES = {
   pending: { label: 'Pending', color: colors.neonCyan },
 };
 
-export default function ChallengeListItem({ opponent, status, time }) {
+export default function ChallengeListItem({ opponent, status, time, timestamp }) {
   const statusStyle = STATUS_STYLES[status] ?? STATUS_STYLES.pending;
 
   return (
@@ -20,7 +20,10 @@ export default function ChallengeListItem({ opponent, status, time }) {
         <Text style={styles.opponent}>{opponent}</Text>
         <Text style={[styles.status, { color: statusStyle.color }]}>{statusStyle.label}</Text>
       </View>
-      <Text style={styles.time}>{time}</Text>
+      <View style={styles.timeInfo}>
+        <Text style={[styles.time, { color: statusStyle.color }]}>{time}</Text>
+        {timestamp ? <Text style={styles.timestamp}>{timestamp}</Text> : null}
+      </View>
     </View>
   );
 }
@@ -30,6 +33,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    paddingVertical: 10,
   },
   avatar: {
     width: 40,
@@ -58,8 +62,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   time: {
-    color: colors.white,
-    fontFamily: typography.body,
+    fontFamily: typography.subheading,
     fontSize: 13,
+    textAlign: 'right',
+  },
+  timeInfo: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  timestamp: {
+    color: 'rgba(255,255,255,0.5)',
+    fontFamily: typography.body,
+    fontSize: 11,
   },
 });

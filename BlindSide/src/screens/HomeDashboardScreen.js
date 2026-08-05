@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { ScrollView, View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
@@ -22,7 +23,10 @@ export default function HomeDashboardScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>Welcome back, {mockUser.username}</Text>
+      <View style={styles.greeting}>
+        <Text style={styles.welcomeText}>Welcome back,</Text>
+        <Text style={styles.usernameText}>{mockUser.username}</Text>
+      </View>
 
       <View style={styles.quickStartRow}>
         {QUICK_START_ACTIONS.map((action) => (
@@ -31,18 +35,31 @@ export default function HomeDashboardScreen({ navigation }) {
             style={({ pressed }) => [styles.quickStartButton, shadows.glowCyan, pressed && styles.quickStartPressed]}
             onPress={() => handleQuickStart(action.key)}
           >
-            <Ionicons name={action.icon} size={24} color={colors.neonCyan} />
+            <Ionicons name={action.icon} size={28} color={colors.neonCyan} />
             <Text style={styles.quickStartLabel}>{action.label}</Text>
           </Pressable>
         ))}
       </View>
 
-      <Text style={styles.subheading}>Recent Challenges</Text>
-      {mockChallenges.map((challenge) => (
-        <Card key={challenge.id} style={styles.card}>
-          <ChallengeListItem opponent={challenge.opponent} status={challenge.status} time={challenge.time} />
-        </Card>
-      ))}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.subheading}>Recent Challenges</Text>
+        <Pressable onPress={() => navigation.navigate('Challenges')}>
+          <Text style={styles.viewAllLink}>View All</Text>
+        </Pressable>
+      </View>
+      <Card style={styles.challengesCard}>
+        {mockChallenges.map((challenge, index) => (
+          <Fragment key={challenge.id}>
+            <ChallengeListItem
+              opponent={challenge.opponent}
+              status={challenge.status}
+              time={challenge.time}
+              timestamp={challenge.timestamp}
+            />
+            {index < mockChallenges.length - 1 && <View style={styles.divider} />}
+          </Fragment>
+        ))}
+      </Card>
     </ScrollView>
   );
 }
@@ -56,10 +73,18 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 16,
   },
-  heading: {
+  greeting: {
+    gap: 2,
+  },
+  welcomeText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontFamily: typography.body,
+    fontSize: 14,
+  },
+  usernameText: {
     color: colors.white,
     fontFamily: typography.heading,
-    fontSize: 20,
+    fontSize: 26,
   },
   quickStartRow: {
     flexDirection: 'row',
@@ -68,16 +93,19 @@ const styles = StyleSheet.create({
   },
   quickStartButton: {
     flex: 1,
-    backgroundColor: colors.midnightNavy,
+    aspectRatio: 4 / 5,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.electricBlue,
     borderRadius: 16,
-    paddingVertical: 16,
+    padding: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
   },
   quickStartPressed: {
     opacity: 0.8,
+    borderColor: colors.neonCyan,
   },
   quickStartLabel: {
     color: colors.white,
@@ -85,13 +113,27 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: 'center',
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   subheading: {
     color: colors.neonCyan,
     fontFamily: typography.subheading,
     fontSize: 16,
   },
-  card: {
-    gap: 4,
+  viewAllLink: {
+    color: colors.neonCyan,
+    fontFamily: typography.body,
+    fontSize: 12,
+  },
+  challengesCard: {
+    backgroundColor: colors.card,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
 });
 

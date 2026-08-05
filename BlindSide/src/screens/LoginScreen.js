@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
+import PuzzleMark from '../components/PuzzleMark';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
@@ -14,7 +15,7 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
   return (
     <View style={styles.container}>
       <View style={[styles.logoBadge, shadows.glowCyan]}>
-        <Ionicons name="extension-puzzle" size={32} color={colors.neonCyan} />
+        <PuzzleMark size={32} />
       </View>
       <Text style={styles.logo}>
         BLIND<Text style={styles.logoAccent}>SIDE</Text>

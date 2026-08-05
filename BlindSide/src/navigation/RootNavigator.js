@@ -4,7 +4,7 @@ import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import SplashScreen from '../screens/SplashScreen';
 
-const SPLASH_FADE_OUT_DURATION = 250;
+const SPLASH_FADE_OUT_DURATION = 375;
 
 export default function RootNavigator() {
   // Sprint 1 uses local state instead of real auth; this flips to true from the login/register actions.

@@ -18,16 +18,16 @@ const PIECES = [
 ];
 
 // Timings keep the logo, title, tagline, and progress bar in a staggered intro sequence.
-const PIECE_DURATION = 440;
-const NOTCH_DELAY = 600;
-const NOTCH_DURATION = 200;
-const TITLE_DELAY = 750;
-const TITLE_DURATION = 350;
-const TAGLINE_DELAY = 1000;
-const TAGLINE_DURATION = 350;
-const PROGRESS_DELAY = 900;
-const PROGRESS_DURATION = 1300;
-const FINISH_DELAY = 2200;
+const PIECE_DURATION = 660;
+const NOTCH_DELAY = 900;
+const NOTCH_DURATION = 300;
+const TITLE_DELAY = 1125;
+const TITLE_DURATION = 525;
+const TAGLINE_DELAY = 1500;
+const TAGLINE_DURATION = 525;
+const PROGRESS_DELAY = 1350;
+const PROGRESS_DURATION = 1950;
+const FINISH_DELAY = 3300;
 
 export default function SplashScreen({ onFinish }) {
   // Each piece gets its own animated value so the pieces can fly in independently.

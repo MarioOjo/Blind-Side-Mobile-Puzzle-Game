@@ -5,6 +5,7 @@ import typography from '../theme/typography';
 export default function ExistingChallengesScreen() {
   return (
     <View style={styles.container}>
+      {/* Placeholder screen reserved for the challenge inbox and open invites. */}
       <Text style={styles.title}>Existing Challenges</Text>
       <Text style={styles.body}>Coming Soon</Text>
     </View>
@@ -13,6 +14,7 @@ export default function ExistingChallengesScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    // Centered placeholder keeps the future feature entry point obvious.
     flex: 1,
     backgroundColor: colors.midnightNavy,
     alignItems: 'center',

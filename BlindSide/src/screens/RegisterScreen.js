@@ -6,15 +6,19 @@ import colors from '../theme/colors';
 import typography from '../theme/typography';
 
 export default function RegisterScreen({ navigation, onAuthenticated }) {
+  // Registration state is local because the backend signup flow is still a placeholder.
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   return (
     <View style={styles.container}>
+      {/* Simple wordmark keeps the register screen visually aligned with login. */}
       <Text style={styles.logo}>BLINDSIDE</Text>
+      {/* The card groups sign-up inputs and the auth action into one panel. */}
       <Card style={styles.card}>
         <Text style={styles.heading}>Create Account</Text>
+        {/* Username will likely map to the profile handle in a future sprint. */}
         <TextInput
           style={styles.input}
           placeholder="Username"
@@ -23,6 +27,7 @@ export default function RegisterScreen({ navigation, onAuthenticated }) {
           value={username}
           onChangeText={setUsername}
         />
+        {/* Email and password fields are already in place for the upcoming auth implementation. */}
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -39,8 +44,9 @@ export default function RegisterScreen({ navigation, onAuthenticated }) {
           value={password}
           onChangeText={setPassword}
         />
-        {/* No real auth call — Sprint 1 simulates a successful registration to demo navigation. */}
+        {/* Sprint 1 simulates a successful registration to keep the nav flow testable. */}
         <PrimaryButton title="Register" onPress={onAuthenticated} />
+        {/* This link returns the user to the login screen inside the same auth stack. */}
         <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
           Already have an account? Log In
         </Text>
@@ -51,6 +57,7 @@ export default function RegisterScreen({ navigation, onAuthenticated }) {
 
 const styles = StyleSheet.create({
   container: {
+    // Register uses the same centered layout as login for consistency.
     flex: 1,
     backgroundColor: colors.midnightNavy,
     alignItems: 'center',

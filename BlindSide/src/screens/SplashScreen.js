@@ -9,7 +9,7 @@ const AnimatedG = Animated.createAnimatedComponent(G);
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 // Corner pieces of the assembled puzzle mark, translated from the design spec's SVG paths.
-// Drawn body-first so the navy notch cutout (added separately below) paints on top of it.
+// The navy notch is drawn last so it sits on top of the cyan pieces.
 const PIECES = [
   { d: 'M70 30 L 70 70 L 30 70 L 30 30 Z', originX: 50, originY: 50, fromX: 65, fromY: -65, fromRotate: 90, startDelay: 70 },
   { d: 'M40 30 C 40 20, 60 20, 60 30 L 60 35 L 40 35 Z', originX: 50, originY: 27, fromX: 0, fromY: -65, fromRotate: -90, startDelay: 0 },
@@ -17,6 +17,7 @@ const PIECES = [
   { d: 'M30 40 L 35 40 C 45 40, 45 60, 35 60 L 30 60 Z', originX: 37, originY: 50, fromX: 65, fromY: 65, fromRotate: -45, startDelay: 210 },
 ];
 
+// Timings keep the logo, title, tagline, and progress bar in a staggered intro sequence.
 const PIECE_DURATION = 440;
 const NOTCH_DELAY = 600;
 const NOTCH_DURATION = 200;
@@ -29,6 +30,7 @@ const PROGRESS_DURATION = 1300;
 const FINISH_DELAY = 2200;
 
 export default function SplashScreen({ onFinish }) {
+  // Each piece gets its own animated value so the pieces can fly in independently.
   const pieceDrivers = useRef(PIECES.map(() => new Animated.Value(0))).current;
   const notchOpacity = useRef(new Animated.Value(0)).current;
   const titleDriver = useRef(new Animated.Value(0)).current;
@@ -36,6 +38,7 @@ export default function SplashScreen({ onFinish }) {
   const progressDriver = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Build one animation per piece so the logo assembles in a staggered sequence.
     const pieceAnimations = PIECES.map((piece, index) =>
       Animated.timing(pieceDrivers[index], {
         toValue: 1,
@@ -75,16 +78,18 @@ export default function SplashScreen({ onFinish }) {
       }),
     ]).start();
 
-    // Fixed timeout drives the handoff to Login — no auth/data-readiness check.
+    // Fixed timeout drives the handoff to Login; there is no auth/data-readiness gate yet.
     const finishTimer = setTimeout(() => onFinish?.(), FINISH_DELAY);
     return () => clearTimeout(finishTimer);
   }, []);
 
   return (
     <View style={styles.container}>
+      {/* The logo sits inside a glow wrapper to match the neon theme. */}
       <Animated.View style={[styles.svgWrapper, shadows.glowCyan]}>
         <Svg width={120} height={120} viewBox="0 0 100 100">
           {PIECES.map((piece, index) => {
+            // Interpolate from the starting off-screen position to the assembled state.
             const driver = pieceDrivers[index];
             const translateX = driver.interpolate({ inputRange: [0, 1], outputRange: [piece.fromX, 0] });
             const translateY = driver.interpolate({ inputRange: [0, 1], outputRange: [piece.fromY, 0] });
@@ -111,6 +116,7 @@ export default function SplashScreen({ onFinish }) {
         </Svg>
       </Animated.View>
 
+      {/* Title and tagline fade in after the mark settles. */}
       <Animated.Text
         style={[
           styles.title,
@@ -124,6 +130,7 @@ export default function SplashScreen({ onFinish }) {
       </Animated.Text>
       <Animated.Text style={[styles.tagline, { opacity: taglineDriver }]}>Race. Reveal. Challenge.</Animated.Text>
 
+      {/* The progress bar is purely decorative and gives the splash a sense of motion. */}
       <View style={styles.progressTrack}>
         <Animated.View
           style={[
@@ -138,6 +145,7 @@ export default function SplashScreen({ onFinish }) {
 
 const styles = StyleSheet.create({
   container: {
+    // Full-screen splash background matches the app shell color.
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.midnightNavy,
     alignItems: 'center',
@@ -165,6 +173,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   progressTrack: {
+    // Positioned near the bottom so the center branding stays visually dominant.
     position: 'absolute',
     bottom: 64,
     width: 128,

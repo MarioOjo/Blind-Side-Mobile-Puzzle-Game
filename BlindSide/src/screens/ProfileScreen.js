@@ -10,6 +10,7 @@ import { mockUser, mockChallenges } from '../constants/mockData';
 export default function ProfileScreen() {
   return (
     <View style={styles.container}>
+      {/* Profile header highlights identity and rank before the stats summary. */}
       <View style={styles.header}>
         <View style={[styles.avatar, shadows.glowCyan]}>
           <Ionicons name="person" size={36} color={colors.neonCyan} />
@@ -21,6 +22,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      {/* Wins and losses are shown as paired cards for quick comparison. */}
       <View style={styles.statRow}>
         <Card style={styles.statCard}>
           <Ionicons name="trophy" size={22} color={colors.victoryGold} />
@@ -33,8 +35,10 @@ export default function ProfileScreen() {
           <Text style={styles.statLabel}>Losses</Text>
         </Card>
       </View>
+      {/* Best time stays centered so the metric reads like a personal record. */}
       <Text style={styles.bestTime}>Best Time: {mockUser.bestTimeSeconds}s</Text>
 
+      {/* Recent challenge history mirrors the dashboard list for continuity. */}
       <Text style={styles.subheading}>Recent Challenges</Text>
       {mockChallenges.map((challenge) => (
         <Card key={challenge.id} style={styles.card}>
@@ -47,6 +51,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    // Profile is vertically stacked because it is mostly summary data.
     flex: 1,
     backgroundColor: colors.midnightNavy,
     padding: 24,

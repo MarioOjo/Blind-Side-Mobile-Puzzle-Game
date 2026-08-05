@@ -5,6 +5,7 @@ import typography from '../theme/typography';
 export default function PuzzleScreen() {
   return (
     <View style={styles.container}>
+      {/* Placeholder screen reserved for the interactive puzzle-play flow. */}
       <Text style={styles.title}>Puzzle</Text>
       <Text style={styles.body}>Coming Soon</Text>
     </View>
@@ -13,6 +14,7 @@ export default function PuzzleScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    // Centered placeholder keeps the future feature entry point obvious.
     flex: 1,
     backgroundColor: colors.midnightNavy,
     alignItems: 'center',

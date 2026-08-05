@@ -5,6 +5,7 @@ import typography from '../theme/typography';
 export default function ResultsScreen() {
   return (
     <View style={styles.container}>
+      {/* Placeholder screen reserved for match history and scoring analytics. */}
       <Text style={styles.title}>Results</Text>
       <Text style={styles.body}>Coming Soon</Text>
     </View>
@@ -13,6 +14,7 @@ export default function ResultsScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    // Centered placeholder keeps the future feature entry point obvious.
     flex: 1,
     backgroundColor: colors.midnightNavy,
     alignItems: 'center',

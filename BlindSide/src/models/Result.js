@@ -1,2 +1,2 @@
-// Placeholder model — fields/logic to be added in a future sprint.
+// Placeholder model for match results, time data, and future type-safe expansion.
 export default {};

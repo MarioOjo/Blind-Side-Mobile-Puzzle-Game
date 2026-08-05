@@ -7,9 +7,10 @@ import typography from '../theme/typography';
 
 const Stack = createNativeStackNavigator();
 
-// Nested screens reached from Home for starting a new puzzle/challenge (Coming Soon this sprint).
+// Nested screens reached from Home for starting a new puzzle or challenge flow.
 export default function HomeStack() {
   return (
+    // Shared header styling keeps future nested screens visually aligned.
     <Stack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: colors.midnightNavy },
@@ -18,7 +19,9 @@ export default function HomeStack() {
         headerShadowVisible: false,
       }}
     >
+      {/* The dashboard is the entry point for the Home tab. */}
       <Stack.Screen name="HomeDashboard" component={HomeDashboardScreen} options={{ headerShown: false }} />
+      {/* Placeholder detail screens are already wired so the tab flow can grow without rewiring navigation later. */}
       <Stack.Screen name="Puzzle" component={PuzzleScreen} />
       <Stack.Screen name="Challenge" component={ChallengeScreen} />
     </Stack.Navigator>

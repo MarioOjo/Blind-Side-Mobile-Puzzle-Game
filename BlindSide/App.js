@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RootNavigator from './src/navigation/RootNavigator';
 
 export default function App() {
+  // Load the design-system fonts before rendering any screen so typography stays consistent.
   const [fontsLoaded] = useFonts({
     Orbitron_700Bold,
     Poppins_700Bold,
@@ -14,12 +15,15 @@ export default function App() {
     Inter_400Regular,
   });
 
+  // Keep the splash screen visible until the font set is ready.
   if (!fontsLoaded) {
     return null;
   }
 
   return (
+    // SafeAreaProvider keeps tab bars, headers, and the splash overlay inside device-safe bounds.
     <SafeAreaProvider>
+      {/* NavigationContainer owns the full app navigation tree. */}
       <NavigationContainer>
         <RootNavigator />
         <StatusBar style="light" />

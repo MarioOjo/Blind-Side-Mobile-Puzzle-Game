@@ -10,6 +10,7 @@ import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 
 export default function LoginScreen({ navigation, onAuthenticated }) {
+  // Form state is local for now because authentication is still simulated in Sprint 1.
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -17,15 +18,19 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
 
   return (
     <View style={styles.container}>
+      {/* The brand badge anchors the top of the auth screen. */}
       <View style={[styles.logoBadge, shadows.glowCyan]}>
         <PuzzleMark size={32} />
       </View>
+      {/* Wordmark and tagline keep the auth screen aligned with the splash branding. */}
       <Text style={styles.logo}>
         BLIND<Text style={styles.logoAccent}>SIDE</Text>
       </Text>
       <Text style={styles.tagline}>Race. Reveal. Challenge.</Text>
+      {/* The card groups the form and alternate sign-in actions into one surface. */}
       <Card style={styles.card}>
         <Text style={styles.heading}>Log In</Text>
+        {/* Username or email field keeps the login path flexible for future backend auth. */}
         <View style={[styles.inputRow, focusedField === 'email' && styles.inputRowFocused]}>
           <Ionicons name="person-outline" size={18} color={colors.neonCyan} style={styles.inputIcon} />
           <TextInput
@@ -39,6 +44,7 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
             onBlur={() => setFocusedField(null)}
           />
         </View>
+        {/* Password field includes the reveal toggle for easier testing on mobile. */}
         <View style={[styles.inputRow, focusedField === 'password' && styles.inputRowFocused]}>
           <Ionicons name="lock-closed-outline" size={18} color={colors.neonCyan} style={styles.inputIcon} />
           <TextInput
@@ -55,17 +61,19 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
             <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="rgba(255,255,255,0.5)" style={styles.eyeIcon} />
           </Pressable>
         </View>
-        {/* No real auth call — Sprint 1 simulates a successful login to demo navigation. */}
+        {/* Sprint 1 simulates a successful login so the navigation flow can be demonstrated without auth wiring. */}
         <PrimaryButton title="Log In" onPress={onAuthenticated} />
-        {/* Decorative only — password reset is not implemented this sprint. */}
+        {/* Future work: wire up password reset and verification once auth is implemented. */}
         <Text style={styles.forgotLink}>Forgot Password?</Text>
+        {/* The divider separates the primary login path from alternate sign-in options. */}
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>OR</Text>
           <View style={styles.dividerLine} />
         </View>
-        {/* Visual only — no real Google OAuth, reuses the Log In button's placeholder behavior. */}
+        {/* Google sign-in is still a visual placeholder; it reuses the same simulated auth handoff. */}
         <GoogleButton onPress={onAuthenticated} />
+        {/* Secondary action routes to the registration screen inside the auth stack. */}
         <PrimaryButton title="Create Account" variant="outline" onPress={() => navigation.navigate('Register')} />
       </Card>
       <Text style={styles.footerTagline}>Challenge your mind. Beat the clock.</Text>
@@ -75,6 +83,7 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
 
 const styles = StyleSheet.create({
   container: {
+    // Centered composition keeps the login form readable on smaller devices.
     flex: 1,
     backgroundColor: colors.midnightNavy,
     alignItems: 'center',
@@ -117,6 +126,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   inputRow: {
+    // Input rows wrap icon, field, and optional toggle into a single focusable surface.
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -126,6 +136,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   inputRowFocused: {
+    // Focus state shifts the border and glow to the accent cyan.
     borderColor: colors.neonCyan,
     ...shadows.glowCyan,
   },

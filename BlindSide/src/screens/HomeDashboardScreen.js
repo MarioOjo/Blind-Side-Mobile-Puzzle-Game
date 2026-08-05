@@ -8,6 +8,7 @@ import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 import { mockUser, mockChallenges } from '../constants/mockData';
 
+// Quick actions keep the home dashboard focused on the three primary player entry points.
 const QUICK_START_ACTIONS = [
   { key: 'puzzle', label: 'New Puzzle', icon: 'extension-puzzle-outline' },
   { key: 'challenge', label: 'Challenge Friend', icon: 'person-add-outline' },
@@ -15,6 +16,7 @@ const QUICK_START_ACTIONS = [
 ];
 
 export default function HomeDashboardScreen({ navigation }) {
+  // Centralized handler keeps the button grid easy to expand later.
   const handleQuickStart = (key) => {
     if (key === 'puzzle') navigation.navigate('Puzzle');
     if (key === 'challenge') navigation.navigate('Challenge');
@@ -23,11 +25,13 @@ export default function HomeDashboardScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Greeting uses mock user data until real profile state is connected. */}
       <View style={styles.greeting}>
         <Text style={styles.welcomeText}>Welcome back,</Text>
         <Text style={styles.usernameText}>{mockUser.username}</Text>
       </View>
 
+      {/* The quick-start grid surfaces the fastest actions for returning players. */}
       <View style={styles.quickStartRow}>
         {QUICK_START_ACTIONS.map((action) => (
           <Pressable
@@ -41,6 +45,7 @@ export default function HomeDashboardScreen({ navigation }) {
         ))}
       </View>
 
+      {/* Recent challenges preview gives the dashboard a live-game feel even with mock data. */}
       <View style={styles.sectionHeader}>
         <Text style={styles.subheading}>Recent Challenges</Text>
         <Pressable onPress={() => navigation.navigate('Challenges')}>
@@ -48,6 +53,7 @@ export default function HomeDashboardScreen({ navigation }) {
         </Pressable>
       </View>
       <Card style={styles.challengesCard}>
+        {/* Challenge rows are rendered as a compact history list. */}
         {mockChallenges.map((challenge, index) => (
           <Fragment key={challenge.id}>
             <ChallengeListItem
@@ -66,6 +72,7 @@ export default function HomeDashboardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
+    // Scroll view lets the dashboard breathe on smaller phones.
     flex: 1,
     backgroundColor: colors.midnightNavy,
   },
@@ -92,6 +99,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   quickStartButton: {
+    // Cards behave like large tap targets for one-handed use.
     flex: 1,
     aspectRatio: 4 / 5,
     backgroundColor: colors.card,

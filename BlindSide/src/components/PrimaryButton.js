@@ -4,9 +4,11 @@ import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 
+// Primary CTA button with either a filled gradient or an outline variant.
 export default function PrimaryButton({ title, onPress, disabled, variant = 'filled' }) {
   if (variant === 'outline') {
     return (
+      // Outline variant is used for secondary actions like navigation or account switching.
       <Pressable
         onPress={onPress}
         disabled={disabled}
@@ -22,6 +24,7 @@ export default function PrimaryButton({ title, onPress, disabled, variant = 'fil
   }
 
   return (
+    // Filled variant is the default action style for the most important CTA on a screen.
     <Pressable onPress={onPress} disabled={disabled} style={disabled && styles.disabled}>
       {({ pressed }) => (
         <LinearGradient
@@ -47,6 +50,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   pressed: {
+    // Slight opacity shift gives tap feedback without changing layout.
     opacity: 0.85,
   },
   disabled: {
@@ -58,6 +62,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   outlineButton: {
+    // Outline styling keeps lower-priority actions visually lighter than the gradient CTA.
     borderWidth: 1.5,
     borderColor: colors.neonCyan,
     backgroundColor: 'transparent',

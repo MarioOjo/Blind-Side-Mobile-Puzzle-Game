@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
@@ -12,6 +12,8 @@ import shadows from '../theme/shadows';
 export default function LoginScreen({ navigation, onAuthenticated }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
 
   return (
     <View style={styles.container}>
@@ -24,7 +26,7 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
       <Text style={styles.tagline}>Race. Reveal. Challenge.</Text>
       <Card style={styles.card}>
         <Text style={styles.heading}>Log In</Text>
-        <View style={styles.inputRow}>
+        <View style={[styles.inputRow, focusedField === 'email' && styles.inputRowFocused]}>
           <Ionicons name="person-outline" size={18} color={colors.neonCyan} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
@@ -33,18 +35,25 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
             autoCapitalize="none"
             value={email}
             onChangeText={setEmail}
+            onFocus={() => setFocusedField('email')}
+            onBlur={() => setFocusedField(null)}
           />
         </View>
-        <View style={styles.inputRow}>
+        <View style={[styles.inputRow, focusedField === 'password' && styles.inputRowFocused]}>
           <Ionicons name="lock-closed-outline" size={18} color={colors.neonCyan} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Password"
             placeholderTextColor={colors.white}
-            secureTextEntry
+            secureTextEntry={!showPassword}
             value={password}
             onChangeText={setPassword}
+            onFocus={() => setFocusedField('password')}
+            onBlur={() => setFocusedField(null)}
           />
+          <Pressable onPress={() => setShowPassword((prev) => !prev)}>
+            <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="rgba(255,255,255,0.5)" style={styles.eyeIcon} />
+          </Pressable>
         </View>
         {/* No real auth call — Sprint 1 simulates a successful login to demo navigation. */}
         <PrimaryButton title="Log In" onPress={onAuthenticated} />
@@ -59,6 +68,7 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
         <GoogleButton onPress={onAuthenticated} />
         <PrimaryButton title="Create Account" variant="outline" onPress={() => navigation.navigate('Register')} />
       </Card>
+      <Text style={styles.footerTagline}>Challenge your mind. Beat the clock.</Text>
     </View>
   );
 }
@@ -113,9 +123,17 @@ const styles = StyleSheet.create({
     borderColor: colors.electricBlue,
     borderRadius: 12,
     paddingHorizontal: 12,
+    backgroundColor: colors.card,
+  },
+  inputRowFocused: {
+    borderColor: colors.neonCyan,
+    ...shadows.glowCyan,
   },
   inputIcon: {
     marginRight: 8,
+  },
+  eyeIcon: {
+    marginLeft: 8,
   },
   input: {
     flex: 1,
@@ -144,6 +162,13 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.body,
     fontSize: 12,
+  },
+  footerTagline: {
+    color: 'rgba(255,255,255,0.5)',
+    fontFamily: typography.body,
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
 

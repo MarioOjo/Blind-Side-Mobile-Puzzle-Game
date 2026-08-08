@@ -8,7 +8,7 @@ const STATUS_LABELS = {
   invited: 'Invitation ready',
 };
 
-export default function PuzzleSessionListItem({ partnerName, status, piecesRemaining, lastPlayed }) {
+export default function PuzzleSessionListItem({ partnerName, status, piecesRemaining, lastPlayed, showProgress = true }) {
   const statusLabel = STATUS_LABELS[status] ?? STATUS_LABELS['in-progress'];
   const progressLabel = status === 'completed'
     ? 'Complete'
@@ -23,10 +23,12 @@ export default function PuzzleSessionListItem({ partnerName, status, piecesRemai
         <Text style={styles.partnerName}>{partnerName}</Text>
         <Text style={styles.status}>{statusLabel}</Text>
       </View>
-      <View style={styles.progressInfo}>
-        <Text style={styles.progress}>{progressLabel}</Text>
-        <Text style={styles.lastPlayed}>{lastPlayed}</Text>
-      </View>
+      {showProgress && (
+        <View style={styles.progressInfo}>
+          <Text style={styles.progress}>{progressLabel}</Text>
+          <Text style={styles.lastPlayed}>{lastPlayed}</Text>
+        </View>
+      )}
     </View>
   );
 }

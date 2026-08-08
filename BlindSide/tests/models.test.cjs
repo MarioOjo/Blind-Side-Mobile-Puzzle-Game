@@ -21,6 +21,7 @@ function loadAppModule(relativePath) {
 const { buildQuestionDocument } = loadAppModule('src/models/Question.js');
 const { buildSessionDocument } = loadAppModule('src/models/Session.js');
 const {
+  calculateCooperativeStats,
   formatRelativeTime,
   indexProfilesByUid,
   presentCooperativeSession,
@@ -82,4 +83,18 @@ test('cooperative session presentation uses partner profiles and placed-piece pr
     lastPlayed: '1h ago',
   });
   assert.equal(formatRelativeTime(null), 'Recently');
+});
+
+test('cooperative statistics use completed sessions and distinct actual partners', () => {
+  const stats = calculateCooperativeStats([
+    { partnerIds: ['alice-id', 'bob-id'], status: 'completed', piecesPlacedTogether: 5 },
+    { partnerIds: ['alice-id', 'bob-id'], status: 'inProgress', piecesPlacedTogether: 2 },
+    { partnerIds: ['carol-id', 'alice-id'], status: 'completed', piecesPlacedTogether: 4 },
+  ], 'alice-id');
+
+  assert.deepEqual(stats, {
+    completedSessions: 2,
+    partnersPlayedWith: 2,
+    piecesPlacedTogether: 11,
+  });
 });

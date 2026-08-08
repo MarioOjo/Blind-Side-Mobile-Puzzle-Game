@@ -36,3 +36,16 @@ export function presentCooperativeSession(session, currentUid, profilesByUid, no
     lastPlayed: formatRelativeTime(session.createdAt, now),
   };
 }
+
+export function calculateCooperativeStats(sessions, currentUid) {
+  const partnerIds = sessions.map((session) => getSessionPartnerId(session, currentUid)).filter(Boolean);
+
+  return {
+    completedSessions: sessions.filter((session) => session.status === 'completed').length,
+    partnersPlayedWith: new Set(partnerIds).size,
+    piecesPlacedTogether: sessions.reduce(
+      (total, session) => total + (session.piecesPlacedTogether ?? 0),
+      0,
+    ),
+  };
+}

@@ -19,7 +19,7 @@ export default function HomeDashboardScreen({ navigation }) {
   // Centralized handler keeps the button grid easy to expand later.
   const handleQuickStart = (key) => {
     if (key === 'puzzle') navigation.navigate('Puzzle');
-    if (key === 'challenge') navigation.navigate('Challenge');
+    if (key === 'challenge') navigation.navigate('PartnerConnection');
     if (key === 'results') navigation.navigate('Results');
   };
 

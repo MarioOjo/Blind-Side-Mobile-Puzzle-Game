@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeDashboardScreen from '../screens/HomeDashboardScreen';
 import PuzzleScreen from '../screens/PuzzleScreen';
 import ChallengeScreen from '../screens/ChallengeScreen';
+import PartnerConnectionScreen from '../screens/PartnerConnectionScreen';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 
@@ -24,6 +25,11 @@ export default function HomeStack() {
       {/* Placeholder detail screens are already wired so the tab flow can grow without rewiring navigation later. */}
       <Stack.Screen name="Puzzle" component={PuzzleScreen} />
       <Stack.Screen name="Challenge" component={ChallengeScreen} />
+      <Stack.Screen
+        name="PartnerConnection"
+        component={PartnerConnectionScreen}
+        options={{ title: 'Add Partner' }}
+      />
     </Stack.Navigator>
   );
 }

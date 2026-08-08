@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import { getAuthErrorMessage, registerUser } from '../services/AuthService';
 
-export default function RegisterScreen({ navigation }) {
+export default function RegisterScreen({
+  navigation,
+  onRegistrationStateChange = () => {},
+}) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,12 +24,15 @@ export default function RegisterScreen({ navigation }) {
 
     setErrorMessage('');
     setIsSubmitting(true);
+    onRegistrationStateChange(true);
 
     try {
       await registerUser(username, email, password);
     } catch (error) {
       setErrorMessage(getAuthErrorMessage(error));
+    } finally {
       setIsSubmitting(false);
+      onRegistrationStateChange(false);
     }
   };
 
@@ -43,6 +49,7 @@ export default function RegisterScreen({ navigation }) {
           placeholder="Username"
           placeholderTextColor={colors.white}
           autoCapitalize="none"
+          editable={!isSubmitting}
           value={username}
           onChangeText={(value) => {
             setUsername(value);
@@ -57,6 +64,7 @@ export default function RegisterScreen({ navigation }) {
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
+          editable={!isSubmitting}
           value={email}
           onChangeText={(value) => {
             setEmail(value);
@@ -68,20 +76,36 @@ export default function RegisterScreen({ navigation }) {
           placeholder="Password"
           placeholderTextColor={colors.white}
           secureTextEntry
+          editable={!isSubmitting}
           value={password}
           onChangeText={(value) => {
             setPassword(value);
             setErrorMessage('');
           }}
         />
-        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        {errorMessage ? (
+          <View style={styles.errorRow}>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss registration error"
+              onPress={() => setErrorMessage('')}
+              hitSlop={8}
+            >
+              <Text style={styles.dismissError}>×</Text>
+            </Pressable>
+          </View>
+        ) : null}
         <PrimaryButton
           title={isSubmitting ? 'Creating Account...' : 'Register'}
           onPress={handleRegister}
           disabled={isSubmitting}
         />
         {/* This link returns the user to the login screen inside the same auth stack. */}
-        <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
+        <Text
+          style={[styles.link, isSubmitting && styles.disabledLink]}
+          onPress={isSubmitting ? undefined : () => navigation.navigate('Login')}
+        >
           Already have an account? Log In
         </Text>
       </Card>
@@ -129,11 +153,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
   },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
   errorText: {
+    flexShrink: 1,
     color: '#FCA5A5',
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',
+  },
+  dismissError: {
+    color: '#FCA5A5',
+    fontFamily: typography.subheading,
+    fontSize: 20,
+    lineHeight: 20,
+  },
+  disabledLink: {
+    opacity: 0.5,
   },
 });
 

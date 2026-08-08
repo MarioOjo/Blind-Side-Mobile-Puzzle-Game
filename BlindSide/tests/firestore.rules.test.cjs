@@ -9,7 +9,7 @@ const {
   assertSucceeds,
   initializeTestEnvironment,
 } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, setDoc, Timestamp, writeBatch } = require('firebase/firestore');
+const { doc, getDoc, runTransaction, setDoc, Timestamp } = require('firebase/firestore');
 
 const projectId = 'demo-blindside';
 let testEnvironment;
@@ -81,24 +81,36 @@ after(() => testEnvironment.cleanup());
 
 test('user profile and username reservation must be created atomically', async () => {
   const db = testEnvironment.authenticatedContext('alice-id').firestore();
-  const batch = writeBatch(db);
-  batch.set(doc(db, 'users/alice-id'), userDocument('alice-id', 'Alice'));
-  batch.set(doc(db, 'usernames/alice'), { uid: 'alice-id', createdAt: Timestamp.now() });
-  await assertSucceeds(batch.commit());
+  await assertSucceeds(runTransaction(db, async (transaction) => {
+    transaction.set(doc(db, 'users/alice-id'), userDocument('alice-id', 'Alice'));
+    transaction.set(
+      doc(db, 'usernames/alice'),
+      { uid: 'alice-id', createdAt: Timestamp.now() },
+    );
+  }));
 
   await assertFails(setDoc(doc(db, 'users/other-id'), userDocument('other-id', 'Other')));
 
   const duplicateDb = testEnvironment.authenticatedContext('duplicate-id').firestore();
-  const duplicateBatch = writeBatch(duplicateDb);
-  duplicateBatch.set(doc(duplicateDb, 'users/duplicate-id'), {
-    ...userDocument('duplicate-id', 'ALICE'),
-    usernameLower: 'alice',
-  });
-  duplicateBatch.set(
-    doc(duplicateDb, 'usernames/alice'),
-    { uid: 'duplicate-id', createdAt: Timestamp.now() },
-  );
-  await assertFails(duplicateBatch.commit());
+  await assertFails(runTransaction(duplicateDb, async (transaction) => {
+    transaction.set(doc(duplicateDb, 'users/duplicate-id'), {
+      ...userDocument('duplicate-id', 'ALICE'),
+      usernameLower: 'alice',
+    });
+    transaction.set(
+      doc(duplicateDb, 'usernames/alice'),
+      { uid: 'duplicate-id', createdAt: Timestamp.now() },
+    );
+  }));
+});
+
+test('unauthenticated clients cannot read or reserve usernames', async () => {
+  const publicDb = testEnvironment.unauthenticatedContext().firestore();
+  await assertFails(getDoc(doc(publicDb, 'usernames/test')));
+  await assertFails(setDoc(doc(publicDb, 'usernames/test'), {
+    uid: 'anonymous-id',
+    createdAt: Timestamp.now(),
+  }));
 });
 
 test('only session participants can create and read sessions', async () => {

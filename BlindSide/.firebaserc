@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "demo-blindside"
-  }
+    "default": "blindside-7ea60"
+  },
+  "targets": {},
+  "etags": {}
 }

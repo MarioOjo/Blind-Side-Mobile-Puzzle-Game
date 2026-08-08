@@ -20,16 +20,7 @@ export async function registerUser(username, email, password) {
 
   try {
     await runTransaction(db, async (transaction) => {
-      const usernameRef = doc(db, COLLECTIONS.usernames, normalizedUsername);
-      const usernameSnapshot = await transaction.get(usernameRef);
-
-      if (usernameSnapshot.exists()) {
-        const error = new Error('Username is already in use.');
-        error.code = 'auth/username-already-in-use';
-        throw error;
-      }
-
-      transaction.set(usernameRef, {
+      transaction.set(doc(db, COLLECTIONS.usernames, normalizedUsername), {
         uid: credential.user.uid,
         createdAt: serverTimestamp(),
       });
@@ -45,8 +36,22 @@ export async function registerUser(username, email, password) {
 
     return credential.user;
   } catch (error) {
-    await deleteUser(credential.user).catch(() => {});
-    throw error;
+    const registrationError = error?.code === 'permission-denied'
+      ? Object.assign(new Error('Username is already in use.'), {
+          code: 'auth/username-already-in-use',
+        })
+      : error;
+
+    try {
+      await deleteUser(credential.user);
+    } catch (cleanupError) {
+      console.error('Unable to roll back Firebase Auth registration.', cleanupError);
+      await signOut(auth).catch((signOutError) => {
+        console.error('Unable to sign out after registration rollback failed.', signOutError);
+      });
+    }
+
+    throw registrationError;
   }
 }
 

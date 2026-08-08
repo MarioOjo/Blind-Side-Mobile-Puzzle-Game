@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "emulators": "firebase emulators:start --project demo-blindside",
     "test:models": "node --test tests/models.test.cjs",
-    "test:firebase": "firebase emulators:exec --only firestore --project demo-blindside \"node --test tests/models.test.cjs tests/firestore.rules.test.cjs\""
+    "test:auth": "node --test tests/auth.service.test.cjs",
+    "test:firebase": "firebase emulators:exec --only firestore --project demo-blindside \"node --test tests/models.test.cjs tests/auth.service.test.cjs tests/firestore.rules.test.cjs\""
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

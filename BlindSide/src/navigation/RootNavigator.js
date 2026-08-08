@@ -10,6 +10,7 @@ const SPLASH_FADE_OUT_DURATION = 375;
 
 export default function RootNavigator() {
   const [currentUser, setCurrentUser] = useState(undefined);
+  const [registrationInProgress, setRegistrationInProgress] = useState(false);
   // The splash sits on top of the nav tree until the intro animation finishes.
   const [showSplash, setShowSplash] = useState(true);
   const splashOpacity = useRef(new Animated.Value(1)).current;
@@ -27,12 +28,12 @@ export default function RootNavigator() {
 
   return (
     <>
-      {currentUser ? (
+      {currentUser && !registrationInProgress ? (
         // MainTabs contains the signed-in game flow.
         <MainTabs />
-      ) : currentUser === null ? (
+      ) : currentUser === null || registrationInProgress ? (
         // AuthStack keeps the login/register flow isolated from the main app tabs.
-        <AuthStack />
+        <AuthStack onRegistrationStateChange={setRegistrationInProgress} />
       ) : null}
       {showSplash && (
         // Absolute overlay lets the splash animate independently of the navigation state.

@@ -4,15 +4,24 @@ import typography from '../theme/typography';
 
 const STATUS_LABELS = {
   'in-progress': 'In progress together',
+  inProgress: 'In progress together',
   completed: 'Completed together',
+  abandoned: 'Puzzle ended',
   invited: 'Invitation ready',
 };
 
-export default function PuzzleSessionListItem({ partnerName, status, piecesRemaining, lastPlayed, showProgress = true }) {
+export default function PuzzleSessionListItem({
+  partnerName,
+  status,
+  piecesRemaining,
+  progressLabel,
+  lastPlayed,
+  showProgress = true,
+}) {
   const statusLabel = STATUS_LABELS[status] ?? STATUS_LABELS['in-progress'];
-  const progressLabel = status === 'completed'
+  const displayedProgress = progressLabel ?? (status === 'completed'
     ? 'Complete'
-    : `${piecesRemaining} ${piecesRemaining === 1 ? 'piece' : 'pieces'} left`;
+    : `${piecesRemaining} ${piecesRemaining === 1 ? 'piece' : 'pieces'} left`);
 
   return (
     <View style={styles.row}>
@@ -25,7 +34,7 @@ export default function PuzzleSessionListItem({ partnerName, status, piecesRemai
       </View>
       {showProgress && (
         <View style={styles.progressInfo}>
-          <Text style={styles.progress}>{progressLabel}</Text>
+          <Text style={styles.progress}>{displayedProgress}</Text>
           <Text style={styles.lastPlayed}>{lastPlayed}</Text>
         </View>
       )}

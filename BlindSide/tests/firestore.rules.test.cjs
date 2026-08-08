@@ -9,7 +9,18 @@ const {
   assertSucceeds,
   initializeTestEnvironment,
 } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, runTransaction, setDoc, Timestamp } = require('firebase/firestore');
+const {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  runTransaction,
+  setDoc,
+  Timestamp,
+  where,
+} = require('firebase/firestore');
 
 const projectId = 'demo-blindside';
 let testEnvironment;
@@ -131,6 +142,33 @@ test('only session participants can create and read sessions', async () => {
   await assertSucceeds(setDoc(doc(bobDb, 'sessions/cooperative'), cooperative));
   await assertSucceeds(getDoc(doc(aliceDb, 'sessions/cooperative')));
   await assertFails(getDoc(doc(strangerDb, 'sessions/cooperative')));
+});
+
+test('participants can query cooperative sessions newest first', async () => {
+  await testEnvironment.withSecurityRulesDisabled(async (context) => {
+    const adminDb = context.firestore();
+    for (const [id, createdAt] of [['older', 1000], ['newer', 2000]]) {
+      const cooperative = sessionDocument({
+        mode: 'cooperative',
+        partnerIds: ['alice-id', 'bob-id'],
+        piecesPlacedTogether: 4,
+        questionsAnswered: 1,
+        createdAt: Timestamp.fromMillis(createdAt),
+      });
+      delete cooperative.userId;
+      await setDoc(doc(adminDb, `sessions/${id}`), cooperative);
+    }
+  });
+
+  const aliceDb = testEnvironment.authenticatedContext('alice-id').firestore();
+  const sessionsQuery = query(
+    collection(aliceDb, 'sessions'),
+    where('mode', '==', 'cooperative'),
+    where('partnerIds', 'array-contains', 'alice-id'),
+    orderBy('createdAt', 'desc'),
+  );
+  const snapshot = await assertSucceeds(getDocs(sessionsQuery));
+  assert.deepEqual(snapshot.docs.map((session) => session.id), ['newer', 'older']);
 });
 
 test('invalid session ownership and unauthenticated access are rejected', async () => {

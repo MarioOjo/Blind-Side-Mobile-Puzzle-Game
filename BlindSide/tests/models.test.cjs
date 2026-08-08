@@ -20,6 +20,11 @@ function loadAppModule(relativePath) {
 
 const { buildQuestionDocument } = loadAppModule('src/models/Question.js');
 const { buildSessionDocument } = loadAppModule('src/models/Session.js');
+const {
+  formatRelativeTime,
+  indexProfilesByUid,
+  presentCooperativeSession,
+} = loadAppModule('src/utils/cooperativeSessions.js');
 
 test('session builder produces distinct solo and cooperative ownership shapes', () => {
   const solo = buildSessionDocument({
@@ -57,4 +62,24 @@ test('question builder accepts only supported relationship tiers', () => {
     { questionId: 'q1', tier: 'friendship', text: 'A question?' },
   );
   assert.throws(() => buildQuestionDocument({ questionId: 'q2', tier: 'team', text: 'No' }));
+});
+
+test('cooperative session presentation uses partner profiles and placed-piece progress', () => {
+  const profiles = indexProfilesByUid([{ uid: 'bob-id', username: 'Bob' }]);
+  const presented = presentCooperativeSession({
+    id: 'session-1',
+    partnerIds: ['alice-id', 'bob-id'],
+    status: 'inProgress',
+    piecesPlacedTogether: 3,
+    createdAt: { toDate: () => new Date(1000) },
+  }, 'alice-id', profiles, 3601000);
+
+  assert.deepEqual(presented, {
+    id: 'session-1',
+    partnerName: 'Bob',
+    status: 'inProgress',
+    progressLabel: '3 pieces placed',
+    lastPlayed: '1h ago',
+  });
+  assert.equal(formatRelativeTime(null), 'Recently');
 });

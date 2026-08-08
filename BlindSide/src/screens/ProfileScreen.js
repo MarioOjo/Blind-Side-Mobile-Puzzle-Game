@@ -1,13 +1,31 @@
+import { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
+import PrimaryButton from '../components/PrimaryButton';
 import PuzzleSessionListItem from '../components/PuzzleSessionListItem';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 import { mockUser, mockPuzzleSessions } from '../constants/mockData';
+import { logoutUser } from '../services/AuthService';
 
 export default function ProfileScreen() {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
+
+  const handleLogout = async () => {
+    setLogoutError('');
+    setIsLoggingOut(true);
+
+    try {
+      await logoutUser();
+    } catch (error) {
+      setLogoutError('Unable to sign out. Please try again.');
+      setIsLoggingOut(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -47,6 +65,16 @@ export default function ProfileScreen() {
           />
         </Card>
       ))}
+
+      <View style={styles.logoutSection}>
+        {logoutError ? <Text style={styles.logoutError}>{logoutError}</Text> : null}
+        <PrimaryButton
+          title={isLoggingOut ? 'Signing Out...' : 'Sign Out'}
+          onPress={handleLogout}
+          disabled={isLoggingOut}
+          variant="outline"
+        />
+      </View>
     </View>
   );
 }
@@ -125,6 +153,19 @@ const styles = StyleSheet.create({
   },
   card: {
     gap: 4,
+  },
+  logoutSection: {
+    marginTop: 8,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    gap: 8,
+  },
+  logoutError: {
+    color: '#FCA5A5',
+    fontFamily: typography.body,
+    fontSize: 13,
+    textAlign: 'center',
   },
 });
 

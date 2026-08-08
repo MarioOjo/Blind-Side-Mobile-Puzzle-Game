@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
@@ -27,7 +27,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <View style={[styles.avatar, shadows.glowCyan]}>
           <Ionicons name="person" size={36} color={colors.neonCyan} />
@@ -75,15 +75,17 @@ export default function ProfileScreen() {
           variant="outline"
         />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    // Profile is vertically stacked because it is mostly summary data.
     flex: 1,
     backgroundColor: colors.midnightNavy,
+  },
+  content: {
+    flexGrow: 1,
     padding: 24,
     gap: 16,
   },

@@ -1,5 +1,12 @@
 import { Fragment, useCallback, useState } from 'react';
-import { ScrollView, View, Text, Pressable, StyleSheet } from 'react-native';
+import {
+  ScrollView,
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Card from '../components/Card';
@@ -26,6 +33,8 @@ const QUICK_START_ACTIONS = [
 ];
 
 export default function HomeDashboardScreen({ navigation }) {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
   const [dashboard, setDashboard] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -78,7 +87,11 @@ export default function HomeDashboardScreen({ navigation }) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, isLandscape && styles.landscapeContent]}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.greeting}>
         <Text style={styles.welcomeText}>Welcome back,</Text>
         <Text style={styles.usernameText}>{dashboard?.profile.username ?? 'Puzzle Partner'}</Text>
@@ -89,7 +102,12 @@ export default function HomeDashboardScreen({ navigation }) {
         {QUICK_START_ACTIONS.map((action) => (
           <Pressable
             key={action.key}
-            style={({ pressed }) => [styles.quickStartButton, shadows.glowCyan, pressed && styles.quickStartPressed]}
+            style={({ pressed }) => [
+              styles.quickStartButton,
+              isLandscape && styles.landscapeQuickStartButton,
+              shadows.glowCyan,
+              pressed && styles.quickStartPressed,
+            ]}
             onPress={() => handleQuickStart(action.key)}
           >
             <Ionicons name={action.icon} size={28} color={colors.neonCyan} />
@@ -158,8 +176,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.midnightNavy,
   },
   content: {
+    width: '100%',
+    maxWidth: 960,
+    alignSelf: 'center',
     padding: 24,
     gap: 16,
+  },
+  landscapeContent: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    gap: 12,
   },
   greeting: {
     gap: 2,
@@ -191,6 +217,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  landscapeQuickStartButton: {
+    aspectRatio: 5 / 2,
+    padding: 12,
   },
   quickStartPressed: {
     opacity: 0.8,

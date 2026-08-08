@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useWindowDimensions } from 'react-native';
 import HomeDashboardScreen from '../screens/HomeDashboardScreen';
 import PuzzleScreen from '../screens/PuzzleScreen';
 import ChallengeScreen from '../screens/ChallengeScreen';
@@ -10,6 +11,9 @@ const Stack = createNativeStackNavigator();
 
 // Nested screens reached from Home for starting a new puzzle or challenge flow.
 export default function HomeStack() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
   return (
     // Shared header styling keeps future nested screens visually aligned.
     <Stack.Navigator
@@ -18,6 +22,7 @@ export default function HomeStack() {
         headerTintColor: colors.neonCyan,
         headerTitleStyle: { fontFamily: typography.subheading },
         headerShadowVisible: false,
+        headerBackButtonDisplayMode: isLandscape ? 'minimal' : 'default',
       }}
     >
       {/* The dashboard is the entry point for the Home tab. */}

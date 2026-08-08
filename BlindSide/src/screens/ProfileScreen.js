@@ -1,5 +1,12 @@
 import { useCallback, useState } from 'react';
-import { Image, ScrollView, View, Text, StyleSheet } from 'react-native';
+import {
+  Image,
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Card from '../components/Card';
@@ -23,6 +30,8 @@ import {
 } from '../utils/cooperativeSessions';
 
 export default function ProfileScreen() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState('');
   const [profileData, setProfileData] = useState(null);
@@ -83,9 +92,13 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, isLandscape && styles.landscapeContent]}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
-        <View style={[styles.avatar, shadows.glowCyan]}>
+        <View style={[styles.avatar, isLandscape && styles.landscapeAvatar, shadows.glowCyan]}>
           {profileData?.profile.profileImage ? (
             <Image source={{ uri: profileData.profile.profileImage }} style={styles.profileImage} />
           ) : (
@@ -160,8 +173,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
     padding: 24,
     gap: 16,
+  },
+  landscapeContent: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    gap: 12,
   },
   header: {
     alignItems: 'center',
@@ -177,6 +198,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  landscapeAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   profileImage: {
     width: '100%',

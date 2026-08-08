@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import {
+  ScrollView,
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
@@ -11,6 +19,8 @@ import shadows from '../theme/shadows';
 import { getAuthErrorMessage, loginUser } from '../services/AuthService';
 
 export default function LoginScreen({ navigation }) {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -40,10 +50,15 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, isLandscape && styles.landscapeContent]}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
       {/* The brand badge anchors the top of the auth screen. */}
-      <View style={[styles.logoBadge, shadows.glowCyan]}>
-        <PuzzleMark size={32} />
+      <View style={[styles.logoBadge, isLandscape && styles.landscapeLogoBadge, shadows.glowCyan]}>
+        <PuzzleMark size={isLandscape ? 24 : 32} />
       </View>
       {/* Wordmark and tagline keep the auth screen aligned with the splash branding. */}
       <Text style={styles.logo}>
@@ -111,19 +126,26 @@ export default function LoginScreen({ navigation }) {
         <PrimaryButton title="Create Account" variant="outline" onPress={() => navigation.navigate('Register')} />
       </Card>
       <Text style={styles.footerTagline}>Challenge your mind. Beat the clock.</Text>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    // Centered composition keeps the login form readable on smaller devices.
     flex: 1,
     backgroundColor: colors.midnightNavy,
+  },
+  content: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
     padding: 24,
+  },
+  landscapeContent: {
+    gap: 8,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
   },
   logoBadge: {
     width: 64,
@@ -135,6 +157,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
+  },
+  landscapeLogoBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginBottom: 0,
   },
   logo: {
     color: colors.white,
@@ -152,6 +180,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
+    maxWidth: 520,
     gap: 12,
   },
   heading: {

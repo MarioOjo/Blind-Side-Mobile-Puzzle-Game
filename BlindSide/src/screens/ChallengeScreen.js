@@ -1,25 +1,38 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { ScrollView, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 
 export default function ChallengeScreen() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, isLandscape && styles.landscapeContent]}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Placeholder screen reserved for creating or accepting a challenge. */}
       <Text style={styles.title}>Challenge</Text>
       <Text style={styles.body}>Coming Soon</Text>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    // Centered placeholder keeps the future feature entry point obvious.
     flex: 1,
     backgroundColor: colors.midnightNavy,
+  },
+  content: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    padding: 24,
+  },
+  landscapeContent: {
+    paddingVertical: 12,
   },
   title: {
     color: colors.white,

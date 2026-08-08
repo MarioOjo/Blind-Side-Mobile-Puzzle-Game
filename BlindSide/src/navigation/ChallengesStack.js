@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useWindowDimensions } from 'react-native';
 import ExistingChallengesScreen from '../screens/ExistingChallengesScreen';
 import ChallengeScreen from '../screens/ChallengeScreen';
 import colors from '../theme/colors';
@@ -8,6 +9,9 @@ const Stack = createNativeStackNavigator();
 
 // Nested screen reached from Challenges for viewing or accepting an existing challenge.
 export default function ChallengesStack() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
   return (
     // Keep the same header treatment as HomeStack so the app feels like one system.
     <Stack.Navigator
@@ -16,6 +20,7 @@ export default function ChallengesStack() {
         headerTintColor: colors.neonCyan,
         headerTitleStyle: { fontFamily: typography.subheading },
         headerShadowVisible: false,
+        headerBackButtonDisplayMode: isLandscape ? 'minimal' : 'default',
       }}
     >
       {/* This is the first screen users see inside the Challenges tab. */}

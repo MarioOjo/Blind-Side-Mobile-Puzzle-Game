@@ -4,12 +4,31 @@ import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
+import { getAuthErrorMessage, registerUser } from '../services/AuthService';
 
-export default function RegisterScreen({ navigation, onAuthenticated }) {
-  // Registration state is local because the backend signup flow is still a placeholder.
+export default function RegisterScreen({ navigation }) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleRegister = async () => {
+    if (!username.trim() || !email.trim() || !password) {
+      setErrorMessage('Complete all fields to create your account.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsSubmitting(true);
+
+    try {
+      await registerUser(email, password);
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -25,7 +44,10 @@ export default function RegisterScreen({ navigation, onAuthenticated }) {
           placeholderTextColor={colors.white}
           autoCapitalize="none"
           value={username}
-          onChangeText={setUsername}
+          onChangeText={(value) => {
+            setUsername(value);
+            setErrorMessage('');
+          }}
         />
         {/* Email and password fields are already in place for the upcoming auth implementation. */}
         <TextInput
@@ -33,8 +55,13 @@ export default function RegisterScreen({ navigation, onAuthenticated }) {
           placeholder="Email"
           placeholderTextColor={colors.white}
           autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(value) => {
+            setEmail(value);
+            setErrorMessage('');
+          }}
         />
         <TextInput
           style={styles.input}
@@ -42,10 +69,17 @@ export default function RegisterScreen({ navigation, onAuthenticated }) {
           placeholderTextColor={colors.white}
           secureTextEntry
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(value) => {
+            setPassword(value);
+            setErrorMessage('');
+          }}
         />
-        {/* Sprint 1 simulates a successful registration to keep the nav flow testable. */}
-        <PrimaryButton title="Register" onPress={onAuthenticated} />
+        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        <PrimaryButton
+          title={isSubmitting ? 'Creating Account...' : 'Register'}
+          onPress={handleRegister}
+          disabled={isSubmitting}
+        />
         {/* This link returns the user to the login screen inside the same auth stack. */}
         <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
           Already have an account? Log In
@@ -94,6 +128,12 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
     textAlign: 'center',
     marginTop: 4,
+  },
+  errorText: {
+    color: '#FCA5A5',
+    fontFamily: typography.body,
+    fontSize: 13,
+    textAlign: 'center',
   },
 });
 

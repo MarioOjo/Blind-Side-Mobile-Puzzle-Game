@@ -8,13 +8,36 @@ import PuzzleMark from '../components/PuzzleMark';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
+import { getAuthErrorMessage, loginUser } from '../services/AuthService';
 
-export default function LoginScreen({ navigation, onAuthenticated }) {
-  // Form state is local for now because authentication is still simulated in Sprint 1.
+export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      setErrorMessage('Enter your email and password.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsSubmitting(true);
+
+    try {
+      await loginUser(email, password);
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGooglePress = () => {
+    setErrorMessage('Google sign-in requires a configured development build.');
+  };
 
   return (
     <View style={styles.container}>
@@ -30,16 +53,21 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
       {/* The card groups the form and alternate sign-in actions into one surface. */}
       <Card style={styles.card}>
         <Text style={styles.heading}>Log In</Text>
-        {/* Username or email field keeps the login path flexible for future backend auth. */}
+        {/* Firebase email/password authentication requires an email address. */}
         <View style={[styles.inputRow, focusedField === 'email' && styles.inputRowFocused]}>
           <Ionicons name="person-outline" size={18} color={colors.neonCyan} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Username or Email"
+            placeholder="Email"
             placeholderTextColor={colors.white}
             autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(value) => {
+              setEmail(value);
+              setErrorMessage('');
+            }}
             onFocus={() => setFocusedField('email')}
             onBlur={() => setFocusedField(null)}
           />
@@ -53,7 +81,10 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
             placeholderTextColor={colors.white}
             secureTextEntry={!showPassword}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(value) => {
+              setPassword(value);
+              setErrorMessage('');
+            }}
             onFocus={() => setFocusedField('password')}
             onBlur={() => setFocusedField(null)}
           />
@@ -61,8 +92,12 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
             <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="rgba(255,255,255,0.5)" style={styles.eyeIcon} />
           </Pressable>
         </View>
-        {/* Sprint 1 simulates a successful login so the navigation flow can be demonstrated without auth wiring. */}
-        <PrimaryButton title="Log In" onPress={onAuthenticated} />
+        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        <PrimaryButton
+          title={isSubmitting ? 'Logging In...' : 'Log In'}
+          onPress={handleLogin}
+          disabled={isSubmitting}
+        />
         {/* Future work: wire up password reset and verification once auth is implemented. */}
         <Text style={styles.forgotLink}>Forgot Password?</Text>
         {/* The divider separates the primary login path from alternate sign-in options. */}
@@ -71,8 +106,7 @@ export default function LoginScreen({ navigation, onAuthenticated }) {
           <Text style={styles.dividerText}>OR</Text>
           <View style={styles.dividerLine} />
         </View>
-        {/* Google sign-in is still a visual placeholder; it reuses the same simulated auth handoff. */}
-        <GoogleButton onPress={onAuthenticated} />
+        <GoogleButton onPress={handleGooglePress} />
         {/* Secondary action routes to the registration screen inside the auth stack. */}
         <PrimaryButton title="Create Account" variant="outline" onPress={() => navigation.navigate('Register')} />
       </Card>
@@ -158,6 +192,12 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
     textAlign: 'center',
     fontSize: 13,
+  },
+  errorText: {
+    color: '#FCA5A5',
+    fontFamily: typography.body,
+    fontSize: 13,
+    textAlign: 'center',
   },
   dividerRow: {
     flexDirection: 'row',

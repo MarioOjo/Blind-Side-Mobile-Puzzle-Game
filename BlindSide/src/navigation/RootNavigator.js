@@ -1,17 +1,20 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
+import { onAuthStateChanged } from 'firebase/auth';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import SplashScreen from '../screens/SplashScreen';
+import { auth } from '../services/FirebaseConfig';
 
 const SPLASH_FADE_OUT_DURATION = 375;
 
 export default function RootNavigator() {
-  // Sprint 1 uses local state instead of real auth; this flips to true from the login/register actions.
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(undefined);
   // The splash sits on top of the nav tree until the intro animation finishes.
   const [showSplash, setShowSplash] = useState(true);
   const splashOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => onAuthStateChanged(auth, setCurrentUser), []);
 
   // Fade the splash away before showing whichever navigation stack is active.
   const handleSplashFinish = () => {
@@ -24,13 +27,13 @@ export default function RootNavigator() {
 
   return (
     <>
-      {isAuthenticated ? (
+      {currentUser ? (
         // MainTabs contains the signed-in game flow.
         <MainTabs />
-      ) : (
+      ) : currentUser === null ? (
         // AuthStack keeps the login/register flow isolated from the main app tabs.
-        <AuthStack onAuthenticated={() => setIsAuthenticated(true)} />
-      )}
+        <AuthStack />
+      ) : null}
       {showSplash && (
         // Absolute overlay lets the splash animate independently of the navigation state.
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: splashOpacity }]}>

@@ -1,4 +1,11 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import {
+  getAuth,
+  getReactNativePersistence,
+  initializeAuth,
+} from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 // Environment variables are injected at build time; real Firebase values should never be hardcoded.
 const firebaseConfig = {
@@ -13,5 +20,22 @@ const firebaseConfig = {
 // Reuse the existing app instance during Fast Refresh instead of creating duplicates.
 const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
+let auth;
+
+try {
+  auth = initializeAuth(firebaseApp, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+} catch (error) {
+  if (error.code !== 'auth/already-initialized') {
+    throw error;
+  }
+
+  auth = getAuth(firebaseApp);
+}
+
+const db = getFirestore(firebaseApp);
+
+export { auth, db };
 export default firebaseApp;
 

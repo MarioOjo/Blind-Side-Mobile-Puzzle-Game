@@ -4,18 +4,12 @@ import RegisterScreen from '../screens/RegisterScreen';
 
 const Stack = createNativeStackNavigator();
 
-export default function AuthStack({ onAuthenticated }) {
+export default function AuthStack() {
   return (
     // The auth stack stays headerless so the screens can own their entire layout.
     <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
-      {/* Login hands off to the root navigator once the user signs in. */}
-      <Stack.Screen name="Login">
-        {(props) => <LoginScreen {...props} onAuthenticated={onAuthenticated} />}
-      </Stack.Screen>
-      {/* Register uses the same simulated auth handoff for Sprint 1. */}
-      <Stack.Screen name="Register">
-        {(props) => <RegisterScreen {...props} onAuthenticated={onAuthenticated} />}
-      </Stack.Screen>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
     </Stack.Navigator>
   );
 }

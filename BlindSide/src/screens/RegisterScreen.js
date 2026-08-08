@@ -23,7 +23,7 @@ export default function RegisterScreen({ navigation }) {
     setIsSubmitting(true);
 
     try {
-      await registerUser(email, password);
+      await registerUser(username, email, password);
     } catch (error) {
       setErrorMessage(getAuthErrorMessage(error));
       setIsSubmitting(false);

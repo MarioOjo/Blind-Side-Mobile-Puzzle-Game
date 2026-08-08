@@ -1,0 +1,131 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validUser(data, uid) {
+      return data.keys().hasAll([
+          'uid', 'username', 'usernameLower', 'email', 'profileImage', 'createdAt', 'partnerIds'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'username', 'usernameLower', 'email', 'profileImage', 'createdAt', 'partnerIds'
+        ])
+        && data.uid == uid
+        && data.username is string
+        && data.username.size() > 0
+        && data.usernameLower is string
+        && data.usernameLower.size() > 0
+        && data.email is string
+        && (data.profileImage == null || data.profileImage is string)
+        && data.createdAt is timestamp
+        && data.partnerIds is list;
+    }
+
+    function validCommonSession(data) {
+      return data.puzzleId is string
+        && data.status in ['inProgress', 'completed', 'abandoned']
+        && (data.completionTime == null || data.completionTime is int)
+        && (data.completedAt == null || data.completedAt is timestamp)
+        && data.movesTaken is int
+        && data.movesTaken >= 0
+        && data.createdAt is timestamp;
+    }
+
+    function validSoloSession(data) {
+      return data.keys().hasAll([
+          'mode', 'userId', 'puzzleId', 'status', 'completionTime', 'completedAt',
+          'movesTaken', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'mode', 'userId', 'puzzleId', 'status', 'completionTime', 'completedAt',
+          'movesTaken', 'createdAt'
+        ])
+        && data.mode == 'solo'
+        && data.userId is string
+        && validCommonSession(data);
+    }
+
+    function validCooperativeSession(data) {
+      return data.keys().hasAll([
+          'mode', 'partnerIds', 'puzzleId', 'status', 'completionTime', 'completedAt',
+          'movesTaken', 'createdAt', 'piecesPlacedTogether', 'questionsAnswered'
+        ])
+        && data.keys().hasOnly([
+          'mode', 'partnerIds', 'puzzleId', 'status', 'completionTime', 'completedAt',
+          'movesTaken', 'createdAt', 'piecesPlacedTogether', 'questionsAnswered'
+        ])
+        && data.mode == 'cooperative'
+        && data.partnerIds is list
+        && data.partnerIds.size() == 2
+        && data.partnerIds[0] != data.partnerIds[1]
+        && data.piecesPlacedTogether is int
+        && data.piecesPlacedTogether >= 0
+        && data.questionsAnswered is int
+        && data.questionsAnswered >= 0
+        && validCommonSession(data);
+    }
+
+    function validSession(data) {
+      return validSoloSession(data) || validCooperativeSession(data);
+    }
+
+    function participates(data) {
+      return (data.mode == 'solo' && data.userId == request.auth.uid)
+        || (data.mode == 'cooperative' && request.auth.uid in data.partnerIds);
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && validUser(request.resource.data, uid)
+        && request.resource.data.partnerIds.size() == 0
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usernameLower)).data.uid == uid;
+      allow update: if signedIn()
+        && validUser(request.resource.data, uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profileImage'])
+        && request.auth.uid == uid;
+      allow update: if signedIn()
+        && validUser(request.resource.data, uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['partnerIds'])
+        && request.resource.data.partnerIds.hasAll(resource.data.partnerIds)
+        && request.resource.data.partnerIds.size() == resource.data.partnerIds.size() + 1
+        && (request.auth.uid == uid || request.auth.uid in request.resource.data.partnerIds);
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /usernames/{usernameLower} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['uid', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt is timestamp
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.usernameLower == usernameLower;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /sessions/{sessionId} {
+      allow create: if signedIn()
+        && validSession(request.resource.data)
+        && participates(request.resource.data);
+      allow read, delete: if signedIn() && participates(resource.data);
+      allow update: if signedIn()
+        && participates(resource.data)
+        && participates(request.resource.data)
+        && validSession(request.resource.data);
+    }
+
+    match /puzzleImages/{imageId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /questions/{questionId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+  }
+}

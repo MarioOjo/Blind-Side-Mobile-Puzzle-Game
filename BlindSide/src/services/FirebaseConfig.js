@@ -1,11 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
+  connectAuthEmulator,
   getAuth,
   getReactNativePersistence,
   initializeAuth,
 } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 
 // Environment variables are injected at build time; real Firebase values should never be hardcoded.
 const firebaseConfig = {
@@ -35,6 +37,16 @@ try {
 }
 
 const db = getFirestore(firebaseApp);
+
+if (
+  process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATORS === 'true'
+  && !globalThis.__blindSideFirebaseEmulatorsConnected
+) {
+  const emulatorHost = Platform.OS === 'android' ? '10.0.2.2' : '127.0.0.1';
+  connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
+  connectFirestoreEmulator(db, emulatorHost, 8080);
+  globalThis.__blindSideFirebaseEmulatorsConnected = true;
+}
 
 export { auth, db };
 export default firebaseApp;

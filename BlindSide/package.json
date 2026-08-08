@@ -6,7 +6,10 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "emulators": "firebase emulators:start --project demo-blindside",
+    "test:models": "node --test tests/models.test.cjs",
+    "test:firebase": "firebase emulators:exec --only firestore --project demo-blindside \"node --test tests/models.test.cjs tests/firestore.rules.test.cjs\""
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -31,5 +34,11 @@
     "react-native-svg": "15.12.1",
     "react-native-web": "^0.21.0"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/plugin-transform-modules-commonjs": "^7.29.7",
+    "@firebase/rules-unit-testing": "^5.0.1",
+    "firebase-tools": "^15.26.0"
+  }
 }

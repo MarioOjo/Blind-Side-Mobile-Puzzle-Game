@@ -2,17 +2,17 @@ import { Fragment } from 'react';
 import { ScrollView, View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
-import ChallengeListItem from '../components/ChallengeListItem';
+import PuzzleSessionListItem from '../components/PuzzleSessionListItem';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
-import { mockUser, mockChallenges } from '../constants/mockData';
+import { mockUser, mockPuzzleSessions } from '../constants/mockData';
 
-// Quick actions keep the home dashboard focused on the three primary player entry points.
+// Routes remain connected to placeholder screens until cooperative flows are implemented.
 const QUICK_START_ACTIONS = [
   { key: 'puzzle', label: 'New Puzzle', icon: 'extension-puzzle-outline' },
-  { key: 'challenge', label: 'Challenge Friend', icon: 'person-add-outline' },
-  { key: 'results', label: 'View Results', icon: 'trophy-outline' },
+  { key: 'challenge', label: 'Invite Partner', icon: 'person-add-outline' },
+  { key: 'results', label: 'Puzzle History', icon: 'trophy-outline' },
 ];
 
 export default function HomeDashboardScreen({ navigation }) {
@@ -45,24 +45,22 @@ export default function HomeDashboardScreen({ navigation }) {
         ))}
       </View>
 
-      {/* Recent challenges preview gives the dashboard a live-game feel even with mock data. */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.subheading}>Recent Challenges</Text>
+        <Text style={styles.subheading}>Recent Activity</Text>
         <Pressable onPress={() => navigation.navigate('Challenges')}>
           <Text style={styles.viewAllLink}>View All</Text>
         </Pressable>
       </View>
       <Card style={styles.challengesCard}>
-        {/* Challenge rows are rendered as a compact history list. */}
-        {mockChallenges.map((challenge, index) => (
-          <Fragment key={challenge.id}>
-            <ChallengeListItem
-              opponent={challenge.opponent}
-              status={challenge.status}
-              time={challenge.time}
-              timestamp={challenge.timestamp}
+        {mockPuzzleSessions.map((session, index) => (
+          <Fragment key={session.id}>
+            <PuzzleSessionListItem
+              partnerName={session.partnerName}
+              status={session.status}
+              piecesRemaining={session.piecesRemaining}
+              lastPlayed={session.lastPlayed}
             />
-            {index < mockChallenges.length - 1 && <View style={styles.divider} />}
+            {index < mockPuzzleSessions.length - 1 && <View style={styles.divider} />}
           </Fragment>
         ))}
       </Card>

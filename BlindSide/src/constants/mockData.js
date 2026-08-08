@@ -2,15 +2,15 @@
 export const mockUser = {
   // Mimics the current signed-in player for dashboard and profile placeholders.
   username: 'Alex Johnson',
-  rank: 'Gold',
-  wins: 12,
-  losses: 5,
-  bestTimeSeconds: 47,
+  profileLabel: 'Puzzle Partner',
+  puzzlesCompletedTogether: 12,
+  partnersPlayedWith: 5,
+  piecesPlacedTogether: 147,
 };
 
-// Challenge rows are intentionally small so the list layout is easy to scan on mobile.
-export const mockChallenges = [
-  { id: '1', opponent: 'Jordan', category: 'Places', status: 'pending', time: '--:--', timestamp: '5h ago' },
-  { id: '2', opponent: 'Sam', category: 'Characters', status: 'won', time: '01:16', timestamp: '2h ago' },
-  { id: '3', opponent: 'Riley', category: 'People', status: 'lost', time: '01:23', timestamp: '1d ago' },
+// Session rows are intentionally small so the list layout is easy to scan on mobile.
+export const mockPuzzleSessions = [
+  { id: '1', partnerName: 'Jordan', category: 'Places', status: 'in-progress', piecesRemaining: 3, lastPlayed: '5h ago' },
+  { id: '2', partnerName: 'Sam', category: 'Characters', status: 'completed', piecesRemaining: 0, lastPlayed: '2h ago' },
+  { id: '3', partnerName: 'Riley', category: 'People', status: 'invited', piecesRemaining: 12, lastPlayed: '1d ago' },
 ];

@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
-import ChallengeListItem from '../components/ChallengeListItem';
+import PuzzleSessionListItem from '../components/PuzzleSessionListItem';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
-import { mockUser, mockChallenges } from '../constants/mockData';
+import { mockUser, mockPuzzleSessions } from '../constants/mockData';
 
 export default function ProfileScreen() {
   return (
@@ -40,9 +40,14 @@ export default function ProfileScreen() {
 
       {/* Recent challenge history mirrors the dashboard list for continuity. */}
       <Text style={styles.subheading}>Recent Challenges</Text>
-      {mockChallenges.map((challenge) => (
-        <Card key={challenge.id} style={styles.card}>
-          <ChallengeListItem opponent={challenge.opponent} status={challenge.status} time={challenge.time} />
+      {mockPuzzleSessions.map((session) => (
+        <Card key={session.id} style={styles.card}>
+          <PuzzleSessionListItem
+            partnerName={session.partnerName}
+            status={session.status}
+            piecesRemaining={session.piecesRemaining}
+            lastPlayed={session.lastPlayed}
+          />
         </Card>
       ))}
     </View>

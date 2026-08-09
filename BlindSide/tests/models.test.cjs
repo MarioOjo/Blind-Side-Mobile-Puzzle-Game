@@ -19,7 +19,9 @@ function loadAppModule(relativePath) {
 }
 
 const { buildQuestionDocument } = loadAppModule('src/models/Question.js');
+const { buildPuzzleImageDocument } = loadAppModule('src/models/PuzzleImage.js');
 const { buildSessionDocument } = loadAppModule('src/models/Session.js');
+const { puzzleImages, questions } = require('../scripts/firestore-seed-manifest.cjs');
 const {
   calculateCooperativeStats,
   formatRelativeTime,
@@ -63,6 +65,49 @@ test('question builder accepts only supported relationship tiers', () => {
     { questionId: 'q1', tier: 'friendship', text: 'A question?' },
   );
   assert.throws(() => buildQuestionDocument({ questionId: 'q2', tier: 'team', text: 'No' }));
+});
+
+test('gameplay seed manifest matches puzzle and question schemas', () => {
+  assert.equal(puzzleImages.length, 3);
+  assert.equal(questions.length, 15);
+  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 3);
+  assert.equal(new Set(questions.map(({ questionId }) => questionId)).size, 15);
+
+  assert.deepEqual(
+    puzzleImages.map(({ category }) => category).sort(),
+    ['characters', 'people', 'places'],
+  );
+  assert.deepEqual(
+    puzzleImages.map(({ difficultyRecommended }) => difficultyRecommended).sort(),
+    ['easy', 'hard', 'medium'],
+  );
+  puzzleImages.forEach((image) => {
+    assert.deepEqual(buildPuzzleImageDocument(image), image);
+    assert.deepEqual(
+      Object.keys(image).sort(),
+      ['category', 'difficultyRecommended', 'imageId', 'imageName', 'imageURL'],
+    );
+    const imageUrl = new URL(image.imageURL);
+    assert.equal(imageUrl.protocol, 'https:');
+    assert.equal(imageUrl.hostname, 'images.unsplash.com');
+    assert.match(imageUrl.pathname, /^\/photo-[\w-]+$/);
+  });
+
+  const tierCounts = questions.reduce((counts, question) => ({
+    ...counts,
+    [question.tier]: (counts[question.tier] ?? 0) + 1,
+  }), {});
+  assert.deepEqual(tierCounts, { acquaintance: 5, friendship: 5, lover: 5 });
+  questions.forEach((question) => {
+    assert.deepEqual(buildQuestionDocument(question), question);
+    assert.deepEqual(Object.keys(question).sort(), ['questionId', 'text', 'tier']);
+    assert.ok(question.text.length > 10);
+  });
+
+  const prompts = new Set(questions.map(({ text }) => text));
+  assert.ok(prompts.has('What do you do for work?'));
+  assert.ok(prompts.has("What's your go-to comfort food?"));
+  assert.ok(prompts.has('What song reminds you of me?'));
 });
 
 test('cooperative session presentation uses partner profiles and placed-piece progress', () => {

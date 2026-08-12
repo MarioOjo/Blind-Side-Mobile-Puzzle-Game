@@ -1,3 +1,4 @@
+// Validates seed content and writes it atomically to an emulator or an explicit production target.
 const fs = require('node:fs');
 const path = require('node:path');
 const { applicationDefault, deleteApp, initializeApp } = require('firebase-admin/app');

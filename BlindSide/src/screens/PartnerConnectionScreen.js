@@ -1,3 +1,4 @@
+// Lets a signed-in user find an exact username and create a mutual partner connection.
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import Card from '../components/Card';

@@ -1,3 +1,4 @@
+// Coordinates Firebase registration, username reservation, rollback cleanup, login, and logout.
 import {
   createUserWithEmailAndPassword,
   deleteUser,

@@ -1,3 +1,4 @@
+// Covers Firestore model builders, seed schemas, and cooperative-session presentation helpers.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');

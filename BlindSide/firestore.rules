@@ -1,3 +1,4 @@
+// Enforces authenticated ownership, strict document schemas, and read-only seeded content.
 rules_version = '2';
 
 service cloud.firestore {
@@ -77,6 +78,7 @@ service cloud.firestore {
         || (data.mode == 'cooperative' && request.auth.uid in data.partnerIds);
     }
 
+    // Usernames and profiles are created atomically so handles remain unique.
     match /users/{uid} {
       allow read: if signedIn();
       allow create: if signedIn()
@@ -107,6 +109,7 @@ service cloud.firestore {
       allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
+    // Session access is limited to the solo owner or either cooperative participant.
     match /sessions/{sessionId} {
       allow create: if signedIn()
         && validSession(request.resource.data)
@@ -118,6 +121,7 @@ service cloud.firestore {
         && validSession(request.resource.data);
     }
 
+    // Gameplay content is readable by signed-in clients but writable only through admin tooling.
     match /puzzleImages/{imageId} {
       allow read: if signedIn();
       allow write: if false;

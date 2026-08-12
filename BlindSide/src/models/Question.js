@@ -1,3 +1,4 @@
+// Validates relationship-tier prompts before they are written to or read from Firestore.
 const QUESTION_TIERS = new Set(['acquaintance', 'friendship', 'lover']);
 
 export function buildQuestionDocument({ questionId, tier, text }) {

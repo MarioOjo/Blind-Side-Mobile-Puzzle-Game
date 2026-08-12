@@ -1,3 +1,4 @@
+// Exercises Firestore authorization, schema rules, session access, and partner transactions.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');

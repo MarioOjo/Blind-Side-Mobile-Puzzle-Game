@@ -1,3 +1,4 @@
+// Confirms the Firestore emulator contains exactly the document IDs declared by the seed manifest.
 const { deleteApp, initializeApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { puzzleImages, questions } = require('./firestore-seed-manifest.cjs');

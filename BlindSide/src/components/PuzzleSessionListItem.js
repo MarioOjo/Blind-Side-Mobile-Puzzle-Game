@@ -1,3 +1,4 @@
+// Presents a compact cooperative-session summary with partner, status, progress, and recency.
 import { View, Text, StyleSheet } from 'react-native';
 import colors from '../theme/colors';
 import typography from '../theme/typography';

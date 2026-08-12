@@ -1,3 +1,4 @@
+// Converts cooperative session records into display-ready summaries and aggregate statistics.
 export function getSessionPartnerId(session, currentUid) {
   return session.partnerIds?.find((uid) => uid !== currentUid) ?? null;
 }

@@ -1,3 +1,4 @@
+// Registers the Expo application after loading Gesture Handler before all other app modules.
 import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
 

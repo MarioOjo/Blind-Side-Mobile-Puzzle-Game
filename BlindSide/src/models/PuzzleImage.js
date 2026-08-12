@@ -1,3 +1,4 @@
+// Validates and normalizes the Firestore document shape used for puzzle image metadata.
 export function buildPuzzleImageDocument({
 	imageId,
 	imageName,

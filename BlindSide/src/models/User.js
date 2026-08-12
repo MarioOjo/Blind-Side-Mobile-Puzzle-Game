@@ -1,3 +1,4 @@
+// Normalizes usernames and builds the canonical user profile stored in Firestore.
 import { serverTimestamp } from 'firebase/firestore';
 
 export function normalizeUsername(username) {

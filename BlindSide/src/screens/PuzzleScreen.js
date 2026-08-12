@@ -1,43 +1,57 @@
-import { useEffect, useState } from 'react';
+// Loads the selected puzzle and gates the interactive jigsaw board behind landscape orientation.
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import JigsawBoard from '../components/JigsawBoard';
 import { getPuzzleImage } from '../services/FirestoreService';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
+import { applyGlobalOrientationPolicy } from '../utils/orientationPolicy';
 
 const GAMEPLAY_PUZZLE_ID = 'places-santorini';
 
 export default function PuzzleScreen() {
-  const { width, height } = useWindowDimensions();
-  const isPortrait = width <= height;
+  const [orientation, setOrientation] = useState(null);
+  const isLandscape = orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT
+    || orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT;
   const [puzzle, setPuzzle] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [imageError, setImageError] = useState(false);
+  const handleImageError = useCallback(() => setImageError(true), []);
 
   useEffect(() => {
     let isMounted = true;
+    let orientationRevision = 0;
 
-    const lockLandscape = async () => {
+    const orientationSubscription = ScreenOrientation.addOrientationChangeListener((event) => {
+      orientationRevision += 1;
+      if (isMounted) setOrientation(event.orientationInfo.orientation);
+    });
+
+    const readInitialOrientation = async () => {
+      const revisionAtRequest = orientationRevision;
+
       try {
-        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-        if (!isMounted) await ScreenOrientation.unlockAsync();
+        const currentOrientation = await ScreenOrientation.getOrientationAsync();
+        if (isMounted && orientationRevision === revisionAtRequest) {
+          setOrientation(currentOrientation);
+        }
       } catch (error) {}
     };
 
-    lockLandscape();
+    readInitialOrientation();
     return () => {
       isMounted = false;
-      ScreenOrientation.unlockAsync().catch(() => {});
+      orientationSubscription.remove();
+      applyGlobalOrientationPolicy().catch(() => {});
     };
   }, []);
 
@@ -65,61 +79,32 @@ export default function PuzzleScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.boardFrame, shadows.glowCyan]}>
-        {isLoading ? (
-          <View style={styles.centeredState}>
-            <ActivityIndicator size="large" color={colors.neonCyan} />
-            <Text style={styles.stateText}>Loading puzzle...</Text>
-          </View>
-        ) : null}
-
-        {!isLoading && loadError ? (
-          <View style={styles.centeredState}>
-            <Ionicons name="cloud-offline-outline" size={34} color={colors.neonCyan} />
-            <Text style={styles.errorText}>{loadError}</Text>
-          </View>
-        ) : null}
-
-        {!isLoading && puzzle && !imageError ? (
-          <Image
-            source={{ uri: puzzle.imageURL }}
-            style={styles.puzzleImage}
-            resizeMode="contain"
-            onError={() => setImageError(true)}
-            accessibilityLabel={puzzle.imageName}
-          />
-        ) : null}
-
-        {!isLoading && puzzle && imageError ? (
-          <View style={styles.centeredState}>
-            <Ionicons name="image-outline" size={34} color={colors.neonCyan} />
-            <Text style={styles.errorText}>The puzzle image could not be displayed.</Text>
-          </View>
-        ) : null}
-      </View>
-
-      <View style={styles.detailsPanel}>
-        <Text style={styles.eyebrow}>COOPERATIVE PUZZLE</Text>
-        <Text style={styles.title}>{puzzle?.imageName ?? 'Puzzle Board'}</Text>
-        <View style={styles.divider} />
-        <View style={styles.detailRow}>
-          <Ionicons name="images-outline" size={18} color={colors.neonCyan} />
-          <View style={styles.detailCopy}>
-            <Text style={styles.detailLabel}>Category</Text>
-            <Text style={styles.detailValue}>{puzzle?.category ?? 'Loading'}</Text>
-          </View>
+      {isLandscape && isLoading ? (
+        <View style={styles.centeredState}>
+          <ActivityIndicator size="large" color={colors.neonCyan} />
+          <Text style={styles.stateText}>Loading puzzle...</Text>
         </View>
-        <View style={styles.detailRow}>
-          <Ionicons name="speedometer-outline" size={18} color={colors.victoryGold} />
-          <View style={styles.detailCopy}>
-            <Text style={styles.detailLabel}>Recommended</Text>
-            <Text style={styles.detailValue}>{puzzle?.difficultyRecommended ?? 'Loading'}</Text>
-          </View>
-        </View>
-        <Text style={styles.stageLabel}>Board preview</Text>
-      </View>
+      ) : null}
 
-      {isPortrait ? (
+      {isLandscape && !isLoading && loadError ? (
+        <View style={styles.centeredState}>
+          <Ionicons name="cloud-offline-outline" size={34} color={colors.neonCyan} />
+          <Text style={styles.errorText}>{loadError}</Text>
+        </View>
+      ) : null}
+
+      {isLandscape && !isLoading && puzzle && !imageError ? (
+        <JigsawBoard puzzle={puzzle} onImageError={handleImageError} />
+      ) : null}
+
+      {isLandscape && !isLoading && puzzle && imageError ? (
+        <View style={styles.centeredState}>
+          <Ionicons name="image-outline" size={34} color={colors.neonCyan} />
+          <Text style={styles.errorText}>The puzzle image could not be displayed.</Text>
+        </View>
+      ) : null}
+
+      {!isLandscape ? (
         <View style={styles.orientationOverlay}>
           <View style={[styles.orientationPrompt, shadows.glowCyan]}>
             <Ionicons name="phone-landscape-outline" size={52} color={colors.neonCyan} />
@@ -136,22 +121,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.midnightNavy,
-    flexDirection: 'row',
-    gap: 16,
     padding: 16,
-  },
-  boardFrame: {
-    flex: 1,
-    minWidth: 0,
-    overflow: 'hidden',
-    backgroundColor: '#080D18',
-    borderWidth: 1.5,
-    borderColor: colors.neonCyan,
-    borderRadius: 12,
-  },
-  puzzleImage: {
-    width: '100%',
-    height: '100%',
   },
   centeredState: {
     flex: 1,
@@ -170,56 +140,6 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
     fontSize: 13,
     lineHeight: 20,
-    textAlign: 'center',
-  },
-  detailsPanel: {
-    width: 220,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.electricBlue,
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-  },
-  eyebrow: {
-    color: colors.neonCyan,
-    fontFamily: typography.subheading,
-    fontSize: 10,
-  },
-  title: {
-    color: colors.white,
-    fontFamily: typography.heading,
-    fontSize: 20,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  detailCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  detailLabel: {
-    color: 'rgba(255,255,255,0.55)',
-    fontFamily: typography.body,
-    fontSize: 10,
-  },
-  detailValue: {
-    color: colors.white,
-    fontFamily: typography.subheading,
-    fontSize: 13,
-    textTransform: 'capitalize',
-  },
-  stageLabel: {
-    marginTop: 'auto',
-    color: colors.neonCyan,
-    fontFamily: typography.body,
-    fontSize: 11,
     textAlign: 'center',
   },
   orientationOverlay: {

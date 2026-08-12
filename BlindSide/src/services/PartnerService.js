@@ -1,3 +1,4 @@
+// Searches normalized usernames and atomically connects two user profiles as partners.
 import {
   collection,
   doc,

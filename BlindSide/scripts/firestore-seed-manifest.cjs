@@ -1,3 +1,4 @@
+// Defines the canonical puzzle images and relationship prompts written by the seed command.
 const puzzleImages = [
   {
     imageId: 'people-maya',
@@ -8,9 +9,9 @@ const puzzleImages = [
   },
   {
     imageId: 'places-santorini',
-    imageName: 'Santorini at Dusk',
+    imageName: 'Santorini Caldera',
     category: 'places',
-    imageURL: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=85',
+    imageURL: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=1200&q=85',
     difficultyRecommended: 'medium',
   },
   {

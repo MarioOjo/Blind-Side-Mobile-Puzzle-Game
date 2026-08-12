@@ -1,3 +1,4 @@
+// Enforces distinct solo/cooperative session ownership and builds canonical Firestore records.
 import { serverTimestamp } from 'firebase/firestore';
 
 const SESSION_MODES = new Set(['solo', 'cooperative']);

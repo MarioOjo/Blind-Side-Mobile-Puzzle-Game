@@ -1,3 +1,4 @@
+// Centralizes typed Firestore collection reads, writes, and cooperative-session queries.
 import {
   collection,
   doc,

@@ -1,3 +1,4 @@
+// Shows the signed-in profile, cooperative statistics, recent sessions, and account actions.
 import { useCallback, useState } from 'react';
 import {
   Image,

@@ -1,5 +1,5 @@
 // Loads the selected puzzle and gates the interactive jigsaw board behind landscape orientation.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -9,15 +9,20 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import JigsawBoard from '../components/JigsawBoard';
-import { getPuzzleImage } from '../services/FirestoreService';
+import { auth } from '../services/FirebaseConfig';
+import {
+  createSoloCompletion,
+  getPuzzleImage,
+  getSoloPersonalBest,
+} from '../services/FirestoreService';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 import { applyGlobalOrientationPolicy } from '../utils/orientationPolicy';
+import { comparePersonalBest, normalizeElapsedTime } from '../utils/soloRun';
 
-const GAMEPLAY_PUZZLE_ID = 'places-santorini';
-
-export default function PuzzleScreen() {
+export default function PuzzleScreen({ navigation, route }) {
+  const puzzleId = route.params?.puzzleId;
   const [orientation, setOrientation] = useState(null);
   const isLandscape = orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT
     || orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT;
@@ -25,7 +30,82 @@ export default function PuzzleScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [imageError, setImageError] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const startedAt = useRef(null);
+  const timerInterval = useRef(null);
+  const completionHandled = useRef(false);
   const handleImageError = useCallback(() => setImageError(true), []);
+
+  const clearTimer = useCallback(() => {
+    if (timerInterval.current) clearInterval(timerInterval.current);
+    timerInterval.current = null;
+  }, []);
+
+  const handleFirstInteraction = useCallback(() => {
+    if (startedAt.current !== null || completionHandled.current) return;
+    startedAt.current = Date.now();
+    setElapsedTime(0);
+    timerInterval.current = setInterval(() => {
+      setElapsedTime(Date.now() - startedAt.current);
+    }, 250);
+  }, []);
+
+  const handlePuzzleComplete = useCallback(async () => {
+    if (completionHandled.current || !puzzle) return;
+    completionHandled.current = true;
+    const completionTime = normalizeElapsedTime(
+      startedAt.current === null ? 0 : Date.now() - startedAt.current,
+    );
+    clearTimer();
+    setElapsedTime(completionTime);
+
+    const baseResults = {
+      puzzleId,
+      puzzleName: puzzle.imageName,
+      difficulty: puzzle.difficultyRecommended,
+      category: puzzle.category,
+      completionTime,
+    };
+
+    const uid = auth.currentUser?.uid;
+    let comparison = { isPersonalBest: false, priorBestTime: null, improvement: null };
+    let bestUnavailable = false;
+    let sessionId = null;
+    let saveError = false;
+
+    if (uid) {
+      try {
+        const priorBest = await getSoloPersonalBest(uid, puzzleId);
+        comparison = comparePersonalBest(completionTime, priorBest?.completionTime);
+      } catch (error) {
+        bestUnavailable = true;
+      }
+
+      try {
+        sessionId = await createSoloCompletion({
+          userId: uid,
+          puzzleId,
+          difficulty: puzzle.difficultyRecommended,
+          category: puzzle.category,
+          completionTime,
+          movesTaken: 0,
+        });
+      } catch (error) {
+        saveError = true;
+      }
+    } else {
+      saveError = true;
+      bestUnavailable = true;
+    }
+
+    navigation.replace('SoloCompletion', {
+      ...baseResults,
+      ...comparison,
+      bestUnavailable,
+      sessionId,
+      saveError,
+    });
+  }, [clearTimer, navigation, puzzle, puzzleId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -61,9 +141,12 @@ export default function PuzzleScreen() {
     const loadPuzzle = async () => {
       setIsLoading(true);
       setLoadError('');
+      setPuzzle(null);
+      setImageError(false);
 
       try {
-        const puzzleImage = await getPuzzleImage(GAMEPLAY_PUZZLE_ID);
+        if (!puzzleId) throw new Error('A puzzle selection is required.');
+        const puzzleImage = await getPuzzleImage(puzzleId);
         if (!puzzleImage) throw new Error('Puzzle image not found.');
         if (isActive) setPuzzle(puzzleImage);
       } catch (error) {
@@ -75,7 +158,15 @@ export default function PuzzleScreen() {
 
     loadPuzzle();
     return () => { isActive = false; };
-  }, []);
+  }, [puzzleId]);
+
+  useEffect(() => {
+    clearTimer();
+    startedAt.current = null;
+    completionHandled.current = false;
+    setElapsedTime(0);
+    return clearTimer;
+  }, [clearTimer, puzzleId]);
 
   return (
     <View style={styles.container}>
@@ -94,7 +185,13 @@ export default function PuzzleScreen() {
       ) : null}
 
       {isLandscape && !isLoading && puzzle && !imageError ? (
-        <JigsawBoard puzzle={puzzle} onImageError={handleImageError} />
+        <JigsawBoard
+          puzzle={puzzle}
+          elapsedTime={elapsedTime}
+          onFirstInteraction={handleFirstInteraction}
+          onComplete={handlePuzzleComplete}
+          onImageError={handleImageError}
+        />
       ) : null}
 
       {isLandscape && !isLoading && puzzle && imageError ? (

@@ -1,7 +1,11 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useWindowDimensions } from 'react-native';
 import HomeDashboardScreen from '../screens/HomeDashboardScreen';
+import DifficultySelectionScreen from '../screens/DifficultySelectionScreen';
+import CategorySelectionScreen from '../screens/CategorySelectionScreen';
+import PuzzleSelectionScreen from '../screens/PuzzleSelectionScreen';
 import PuzzleScreen from '../screens/PuzzleScreen';
+import SoloCompletionScreen from '../screens/SoloCompletionScreen';
 import ChallengeScreen from '../screens/ChallengeScreen';
 import PartnerConnectionScreen from '../screens/PartnerConnectionScreen';
 import colors from '../theme/colors';
@@ -27,8 +31,29 @@ export default function HomeStack() {
     >
       {/* The dashboard is the entry point for the Home tab. */}
       <Stack.Screen name="HomeDashboard" component={HomeDashboardScreen} options={{ headerShown: false }} />
-      {/* Placeholder detail screens are already wired so the tab flow can grow without rewiring navigation later. */}
-      <Stack.Screen name="Puzzle" component={PuzzleScreen} />
+      {/* Each selection step is pushed separately so Back returns to the immediately previous choice. */}
+      <Stack.Screen
+        name="DifficultySelection"
+        component={DifficultySelectionScreen}
+        options={{ title: 'Choose Difficulty' }}
+      />
+      <Stack.Screen
+        name="CategorySelection"
+        component={CategorySelectionScreen}
+        options={{ title: 'Choose Category' }}
+      />
+      <Stack.Screen
+        name="PuzzleSelection"
+        component={PuzzleSelectionScreen}
+        options={{ title: 'Choose Puzzle' }}
+      />
+      <Stack.Screen name="Puzzle" component={PuzzleScreen} options={{ title: 'Gameplay' }} />
+      <Stack.Screen
+        name="SoloCompletion"
+        component={SoloCompletionScreen}
+        options={{ headerShown: false }}
+      />
+      {/* Placeholder detail screens remain available for the challenge flow. */}
       <Stack.Screen name="Challenge" component={ChallengeScreen} />
       <Stack.Screen
         name="PartnerConnection"

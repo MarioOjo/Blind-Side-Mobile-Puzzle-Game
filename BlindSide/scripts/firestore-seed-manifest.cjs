@@ -12,13 +12,27 @@ const puzzleImages = [
     imageName: 'Santorini Caldera',
     category: 'places',
     imageURL: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=1200&q=85',
-    difficultyRecommended: 'medium',
+    difficultyRecommended: 'easy',
   },
   {
     imageId: 'characters-astronaut',
     imageName: 'The Astronaut',
     category: 'characters',
     imageURL: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'easy',
+  },
+  {
+    imageId: 'textures-brick-wall',
+    imageName: 'Brick Wall',
+    category: 'textures',
+    imageURL: 'https://images.unsplash.com/photo-1495578942200-c5f5d2137def?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'medium',
+  },
+  {
+    imageId: 'textures-coffee-beans',
+    imageName: 'Coffee Beans',
+    category: 'textures',
+    imageURL: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=85',
     difficultyRecommended: 'hard',
   },
 ];

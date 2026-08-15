@@ -1,5 +1,5 @@
 // Builds the measured puzzle board, locked-piece layer, progress header, and paged piece tray.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -15,10 +15,12 @@ import {
   createJigsawPieces,
   createTrayOrder,
   getSnapTolerance,
+  getTrayPageLayout,
 } from '../utils/jigsaw';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
+import { formatElapsedTime } from '../utils/soloRun';
 
 const WORKSPACE_GAP = 16;
 const TRAY_MIN_WIDTH = 150;
@@ -62,18 +64,26 @@ function PlacedPiece({ piece, imageUrl, boardWidth, boardHeight }) {
   );
 }
 
-export default function JigsawBoard({ puzzle, onImageError }) {
+export default function JigsawBoard({
+  puzzle,
+  elapsedTime,
+  onFirstInteraction,
+  onComplete,
+  onImageError,
+}) {
   const [workspace, setWorkspace] = useState({ width: 0, height: 0 });
   const [imageSize, setImageSize] = useState(null);
   const [placedIds, setPlacedIds] = useState(() => new Set());
   const [page, setPage] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const completionReported = useRef(false);
 
   useEffect(() => {
     let isActive = true;
     setImageSize(null);
     setPlacedIds(new Set());
     setPage(0);
+    completionReported.current = false;
 
     Image.getSize(
       puzzle.imageURL,
@@ -110,7 +120,12 @@ export default function JigsawBoard({ puzzle, onImageError }) {
     const trayHeaderHeight = TRAY_HEADER_HEIGHT;
     const availableTrayHeight = Math.max(1, workspace.height - trayHeaderHeight);
     const pieceRenderHeight = generated.pieces[0]?.renderHeight ?? availableTrayHeight;
-    const pageCapacity = Math.max(1, Math.floor(availableTrayHeight / pieceRenderHeight));
+    const trayPageLayout = getTrayPageLayout({
+      difficulty: puzzle.difficultyRecommended,
+      pieceCount: generated.pieceCount,
+      availableHeight: availableTrayHeight,
+      pieceRenderHeight,
+    });
 
     return {
       ...generated,
@@ -121,7 +136,7 @@ export default function JigsawBoard({ puzzle, onImageError }) {
       trayX,
       trayWidth,
       trayHeaderHeight,
-      pageCapacity,
+      ...trayPageLayout,
     };
   }, [imageSize, puzzle.difficultyRecommended, workspace.height, workspace.width]);
 
@@ -144,6 +159,22 @@ export default function JigsawBoard({ puzzle, onImageError }) {
   useEffect(() => {
     if (page !== safePage) setPage(safePage);
   }, [page, safePage]);
+
+  useEffect(() => {
+    if (
+      geometry
+      && placedIds.size === geometry.pieceCount
+      && !completionReported.current
+    ) {
+      completionReported.current = true;
+      onComplete();
+    }
+  }, [geometry, onComplete, placedIds]);
+
+  const handleDragStart = () => {
+    setIsDragging(true);
+    onFirstInteraction();
+  };
 
   const handleSettle = (pieceId, placed) => {
     setIsDragging(false);
@@ -224,6 +255,7 @@ export default function JigsawBoard({ puzzle, onImageError }) {
                 <Text style={styles.progressText}>
                   {placedIds.size}/{geometry.pieceCount}
                 </Text>
+                <Text style={styles.timerText}>{formatElapsedTime(elapsedTime)}</Text>
                 <View style={styles.pageControls}>
                   <Pressable
                     accessibilityLabel="Previous piece page"
@@ -256,9 +288,16 @@ export default function JigsawBoard({ puzzle, onImageError }) {
           </View>
 
           {visiblePieces.map((piece, visibleIndex) => {
+            const scaledRenderWidth = piece.renderWidth * geometry.presentationScale;
+            const scaledRenderHeight = piece.renderHeight * geometry.presentationScale;
+            const visualLeft = geometry.trayX
+              + ((geometry.trayWidth - scaledRenderWidth) / 2);
+            const visualTop = geometry.trayHeaderHeight
+              + (visibleIndex * geometry.slotHeight)
+              + ((geometry.slotHeight - scaledRenderHeight) / 2);
             const origin = {
-              x: geometry.trayX + ((geometry.trayWidth - piece.cellWidth) / 2),
-              y: geometry.trayHeaderHeight + (visibleIndex * piece.renderHeight) + piece.padding,
+              x: visualLeft + (piece.padding * geometry.presentationScale),
+              y: visualTop + (piece.padding * geometry.presentationScale),
             };
             const target = {
               x: geometry.boardX + piece.targetX,
@@ -274,19 +313,17 @@ export default function JigsawBoard({ puzzle, onImageError }) {
                 boardHeight={geometry.boardHeight}
                 origin={origin}
                 target={target}
-                snapTolerance={getSnapTolerance(piece.cellWidth, piece.cellHeight)}
-                onDragStart={() => setIsDragging(true)}
+                trayScale={geometry.presentationScale}
+                snapTolerance={getSnapTolerance(
+                  piece.cellWidth,
+                  piece.cellHeight,
+                  puzzle.difficultyRecommended,
+                )}
+                onDragStart={handleDragStart}
                 onSettle={handleSettle}
               />
             );
           })}
-
-          {placedIds.size === geometry.pieceCount ? (
-            <View style={styles.completeBadge}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.victoryGold} />
-              <Text style={styles.completeText}>Puzzle complete</Text>
-            </View>
-          ) : null}
         </>
       ) : null}
     </View>
@@ -359,6 +396,12 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
     fontSize: 10,
   },
+  timerText: {
+    color: colors.victoryGold,
+    fontFamily: typography.subheading,
+    fontSize: 10,
+    fontVariant: ['tabular-nums'],
+  },
   pageControls: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -385,24 +428,5 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
     fontSize: 9,
     textAlign: 'center',
-  },
-  completeBadge: {
-    position: 'absolute',
-    left: 12,
-    bottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 12,
-    height: 36,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.victoryGold,
-    borderRadius: 6,
-  },
-  completeText: {
-    color: colors.white,
-    fontFamily: typography.subheading,
-    fontSize: 11,
   },
 });

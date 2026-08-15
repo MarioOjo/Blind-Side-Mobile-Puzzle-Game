@@ -17,8 +17,11 @@ export function validateSession(input) {
     throw new Error('Sessions require a puzzleId.');
   }
 
-  if (input.mode === 'solo' && (!input.userId || input.partnerIds)) {
-    throw new Error('Solo sessions require userId and cannot include partnerIds.');
+  if (
+    input.mode === 'solo'
+    && (!input.userId || input.partnerIds || !input.difficulty || !input.category)
+  ) {
+    throw new Error('Solo sessions require userId, difficulty, category, and no partnerIds.');
   }
 
   if (
@@ -48,7 +51,12 @@ export function buildSessionDocument(input) {
   };
 
   if (input.mode === 'solo') {
-    return { ...document, userId: input.userId };
+    return {
+      ...document,
+      userId: input.userId,
+      difficulty: input.difficulty,
+      category: input.category,
+    };
   }
 
   return {

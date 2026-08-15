@@ -81,7 +81,7 @@ export default function HomeDashboardScreen({ navigation }) {
   }, []));
 
   const handleQuickStart = (key) => {
-    if (key === 'puzzle') navigation.navigate('Puzzle');
+    if (key === 'puzzle') navigation.navigate('DifficultySelection');
     if (key === 'partner') navigation.navigate('PartnerConnection');
     if (key === 'results') navigation.navigate('Results');
   };

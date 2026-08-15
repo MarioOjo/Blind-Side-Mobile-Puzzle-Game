@@ -1,11 +1,14 @@
 // Centralizes typed Firestore collection reads, writes, and cooperative-session queries.
 import {
+  addDoc,
   collection,
   doc,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
+  serverTimestamp,
   setDoc,
   where,
 } from 'firebase/firestore';
@@ -50,6 +53,46 @@ export function getSession(sessionId) {
   return readDocument(COLLECTIONS.sessions, sessionId);
 }
 
+export async function createSoloCompletion(input) {
+  const reference = await addDoc(
+    collection(db, COLLECTIONS.sessions),
+    buildSessionDocument({
+      ...input,
+      mode: 'solo',
+      status: 'completed',
+      completedAt: serverTimestamp(),
+    }),
+  );
+  return reference.id;
+}
+
+export async function getSoloPersonalBest(uid, puzzleId) {
+  const personalBestQuery = query(
+    collection(db, COLLECTIONS.sessions),
+    where('mode', '==', 'solo'),
+    where('userId', '==', uid),
+    where('puzzleId', '==', puzzleId),
+    where('status', '==', 'completed'),
+    orderBy('completionTime', 'asc'),
+    limit(1),
+  );
+  const snapshot = await getDocs(personalBestQuery);
+  if (snapshot.empty) return null;
+  const session = snapshot.docs[0];
+  return { id: session.id, ...session.data() };
+}
+
+export async function getCompletedSoloSessions(uid) {
+  const completedSoloQuery = query(
+    collection(db, COLLECTIONS.sessions),
+    where('mode', '==', 'solo'),
+    where('userId', '==', uid),
+    where('status', '==', 'completed'),
+  );
+  const snapshot = await getDocs(completedSoloQuery);
+  return snapshot.docs.map((session) => ({ id: session.id, ...session.data() }));
+}
+
 export async function getCooperativeSessions(uid) {
   const sessionsQuery = query(
     collection(db, COLLECTIONS.sessions),
@@ -70,6 +113,14 @@ export function createPuzzleImage(input) {
 
 export function getPuzzleImage(imageId) {
   return readDocument(COLLECTIONS.puzzleImages, imageId);
+}
+
+export async function getPuzzleImages() {
+  const snapshot = await getDocs(collection(db, COLLECTIONS.puzzleImages));
+  return snapshot.docs.map((puzzle) => buildPuzzleImageDocument({
+    ...puzzle.data(),
+    imageId: puzzle.id,
+  }));
 }
 
 export function createQuestion(input) {

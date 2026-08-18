@@ -26,11 +26,6 @@ import {
   presentCooperativeSession,
 } from '../utils/cooperativeSessions';
 
-const QUICK_START_ACTIONS = [
-  { key: 'puzzle', label: 'New Puzzle', icon: 'extension-puzzle-outline' },
-  { key: 'results', label: 'Puzzle History', icon: 'trophy-outline' },
-];
-
 export default function HomeDashboardScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
@@ -79,11 +74,6 @@ export default function HomeDashboardScreen({ navigation }) {
     return () => { isActive = false; };
   }, []));
 
-  const handleQuickStart = (key) => {
-    if (key === 'puzzle') navigation.navigate('DifficultySelection');
-    if (key === 'results') navigation.navigate('Results');
-  };
-
   return (
     <ScrollView
       style={styles.container}
@@ -95,66 +85,92 @@ export default function HomeDashboardScreen({ navigation }) {
         <Text style={styles.usernameText}>{dashboard?.profile.username ?? 'Puzzle Partner'}</Text>
       </View>
 
-      {/* The quick-start grid surfaces the fastest actions for returning players. */}
-      <View style={styles.quickStartRow}>
-        {QUICK_START_ACTIONS.map((action) => (
-          <Pressable
-            key={action.key}
-            style={({ pressed }) => [
-              styles.quickStartButton,
-              isLandscape && styles.landscapeQuickStartButton,
-              shadows.glowCyan,
-              pressed && styles.quickStartPressed,
-            ]}
-            onPress={() => handleQuickStart(action.key)}
-          >
-            <Ionicons name={action.icon} size={28} color={colors.neonCyan} />
-            <Text style={styles.quickStartLabel}>{action.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.subheading}>Puzzle Partners</Text>
-        <Pressable onPress={() => navigation.navigate('PartnerConnection')}>
-          <Text style={styles.viewAllLink}>Add Partner</Text>
+      {/* ── PLAY SOLO ─────────────────────────────────────────── */}
+      <Text style={styles.sectionLabel}>PLAY SOLO</Text>
+      <Card style={[styles.modeCard, styles.soloCard, shadows.glowGold]}>
+        <View style={styles.modeCardHeader}>
+          <Ionicons name="person-outline" size={24} color={colors.victoryGold} />
+          <View style={styles.modeCardText}>
+            <Text style={styles.modeCardTitle}>Solo Puzzle</Text>
+            <Text style={styles.modeCardSubtitle}>Play at your own pace</Text>
+          </View>
+        </View>
+        <Pressable
+          style={({ pressed }) => [
+            styles.modeCardButton,
+            styles.soloButton,
+            pressed && styles.modeCardButtonPressed,
+          ]}
+          onPress={() => navigation.navigate('DifficultySelection')}
+        >
+          <Text style={[styles.modeCardButtonText, styles.soloButtonText]}>Start Solo Puzzle</Text>
+          <Ionicons name="arrow-forward" size={16} color={colors.victoryGold} />
         </Pressable>
-      </View>
-      <Card style={styles.challengesCard}>
-        {isLoading ? <Text style={styles.stateText}>Loading partners...</Text> : null}
-        {!isLoading && loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
-        {!isLoading && !loadError && dashboard?.partners.length === 0 ? (
-          <Text style={styles.stateText}>No partners yet — add one to start playing together.</Text>
-        ) : null}
-        {!isLoading && !loadError && dashboard?.partners.map((partner, index) => (
-          <Fragment key={partner.uid}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Play with ${partner.username}`}
-              onPress={() => navigation.push('CooperativeTierSelection', {
-                partnerId: partner.uid,
-                partnerName: partner.username,
-              })}
-              style={({ pressed }) => [styles.partnerRow, pressed && styles.partnerRowPressed]}
-            >
-              <View style={styles.partnerAvatar}>
-                <Text style={styles.partnerAvatarText}>{partner.username.charAt(0).toUpperCase()}</Text>
-              </View>
-              <Text style={styles.partnerName}>{partner.username}</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.neonCyan} />
-            </Pressable>
-            {index < dashboard.partners.length - 1 && <View style={styles.divider} />}
-          </Fragment>
-        ))}
       </Card>
 
+      {/* ── PLAY TOGETHER ──────────────────────────────────────── */}
+      <Text style={styles.sectionLabel}>PLAY TOGETHER</Text>
+      <Card style={[styles.modeCard, styles.coopCard, shadows.glowCyan]}>
+        <View style={styles.modeCardHeader}>
+          <Ionicons name="people-outline" size={24} color={colors.neonCyan} />
+          <View style={styles.modeCardText}>
+            <Text style={styles.modeCardTitle}>Cooperative Puzzle</Text>
+            <Text style={styles.modeCardSubtitle}>Play with a partner</Text>
+          </View>
+        </View>
+
+        {isLoading ? (
+          <Text style={styles.stateText}>Loading partners...</Text>
+        ) : loadError ? (
+          <Text style={styles.errorText}>{loadError}</Text>
+        ) : dashboard?.partners.length === 0 ? (
+          <Text style={styles.stateText}>Add a partner to play together.</Text>
+        ) : (
+          <View style={styles.partnerList}>
+            {dashboard.partners.map((partner, index) => (
+              <Fragment key={partner.uid}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Play with ${partner.username}`}
+                  onPress={() => navigation.push('CooperativeTierSelection', {
+                    partnerId: partner.uid,
+                    partnerName: partner.username,
+                  })}
+                  style={({ pressed }) => [styles.partnerRow, pressed && styles.partnerRowPressed]}
+                >
+                  <View style={styles.partnerAvatar}>
+                    <Text style={styles.partnerAvatarText}>{partner.username.charAt(0).toUpperCase()}</Text>
+                  </View>
+                  <Text style={styles.partnerName}>{partner.username}</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.neonCyan} />
+                </Pressable>
+                {index < dashboard.partners.length - 1 && <View style={styles.divider} />}
+              </Fragment>
+            ))}
+          </View>
+        )}
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.modeCardButton,
+            styles.coopButton,
+            pressed && styles.modeCardButtonPressed,
+          ]}
+          onPress={() => navigation.navigate('PartnerConnection')}
+        >
+          <Text style={[styles.modeCardButtonText, styles.coopButtonText]}>Add Partner</Text>
+          <Ionicons name="arrow-forward" size={16} color={colors.neonCyan} />
+        </Pressable>
+      </Card>
+
+      {/* ── RECENT ACTIVITY ────────────────────────────────────── */}
       <View style={styles.sectionHeader}>
         <Text style={styles.subheading}>Recent Activity</Text>
-        <Pressable onPress={() => navigation.navigate('Challenges')}>
+        <Pressable onPress={() => navigation.navigate('Results')}>
           <Text style={styles.viewAllLink}>View All</Text>
         </Pressable>
       </View>
-      <Card style={styles.challengesCard}>
+      <Card style={styles.activityCard}>
         {isLoading ? <Text style={styles.stateText}>Loading activity...</Text> : null}
         {!isLoading && loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
         {!isLoading && !loadError && dashboard?.sessions.length === 0 ? (
@@ -178,7 +194,6 @@ export default function HomeDashboardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    // Scroll view lets the dashboard breathe on smaller phones.
     flex: 1,
     backgroundColor: colors.midnightNavy,
   },
@@ -187,12 +202,12 @@ const styles = StyleSheet.create({
     maxWidth: 960,
     alignSelf: 'center',
     padding: 24,
-    gap: 16,
+    gap: 20,
   },
   landscapeContent: {
     paddingHorizontal: 32,
     paddingVertical: 16,
-    gap: 12,
+    gap: 16,
   },
   greeting: {
     gap: 2,
@@ -207,42 +222,18 @@ const styles = StyleSheet.create({
     fontFamily: typography.heading,
     fontSize: 26,
   },
-  quickStartRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  quickStartButton: {
-    // Cards behave like large tap targets for one-handed use.
-    flex: 1,
-    aspectRatio: 4 / 5,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.electricBlue,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  landscapeQuickStartButton: {
-    aspectRatio: 5 / 2,
-    padding: 12,
-  },
-  quickStartPressed: {
-    opacity: 0.8,
-    borderColor: colors.neonCyan,
-  },
-  quickStartLabel: {
-    color: colors.white,
+  sectionLabel: {
+    color: 'rgba(255,255,255,0.45)',
     fontFamily: typography.body,
     fontSize: 11,
-    textAlign: 'center',
+    letterSpacing: 1.2,
+    marginTop: 4,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 4,
   },
   subheading: {
     color: colors.neonCyan,
@@ -254,7 +245,98 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
     fontSize: 12,
   },
-  challengesCard: {
+  modeCard: {
+    padding: 16,
+  },
+  soloCard: {
+    borderColor: colors.victoryGold,
+  },
+  coopCard: {
+    borderColor: colors.neonCyan,
+  },
+  modeCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  modeCardText: {
+    flex: 1,
+  },
+  modeCardTitle: {
+    color: colors.white,
+    fontFamily: typography.subheading,
+    fontSize: 17,
+  },
+  modeCardSubtitle: {
+    color: 'rgba(255,255,255,0.45)',
+    fontFamily: typography.body,
+    fontSize: 13,
+    marginTop: 1,
+  },
+  modeCardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  modeCardButtonPressed: {
+    opacity: 0.85,
+  },
+  soloButton: {
+    backgroundColor: 'rgba(251,191,36,0.12)',
+  },
+  coopButton: {
+    backgroundColor: 'rgba(6,182,212,0.12)',
+  },
+  modeCardButtonText: {
+    fontFamily: typography.body,
+    fontSize: 14,
+  },
+  soloButtonText: {
+    color: colors.victoryGold,
+  },
+  coopButtonText: {
+    color: colors.neonCyan,
+  },
+  partnerList: {
+    marginBottom: 8,
+  },
+  partnerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: 6,
+  },
+  partnerRowPressed: {
+    backgroundColor: 'rgba(6,182,212,0.08)',
+  },
+  partnerAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.electricBlue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  partnerAvatarText: {
+    color: colors.white,
+    fontFamily: typography.subheading,
+    fontSize: 14,
+  },
+  partnerName: {
+    flex: 1,
+    color: colors.white,
+    fontFamily: typography.subheading,
+    fontSize: 15,
+  },
+  activityCard: {
     backgroundColor: colors.card,
   },
   stateText: {
@@ -269,39 +351,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
-  partnerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderRadius: 6,
-  },
-  partnerRowPressed: {
-    backgroundColor: 'rgba(6,182,212,0.08)',
-  },
-  partnerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.electricBlue,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  partnerAvatarText: {
-    color: colors.white,
-    fontFamily: typography.subheading,
-    fontSize: 16,
-  },
-  partnerName: {
-    flex: 1,
-    color: colors.white,
-    fontFamily: typography.subheading,
-    fontSize: 15,
-  },
   divider: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
 });
-

@@ -33,13 +33,7 @@ export default function SoloCompletionScreen({ navigation, route }) {
     category: results.category,
   });
 
-  const startNewPuzzle = () => navigation.reset({
-    index: 1,
-    routes: [
-      { name: 'HomeDashboard' },
-      { name: 'DifficultySelection' },
-    ],
-  });
+  const startNewPuzzle = () => navigation.replace('DifficultySelection');
 
   const bestMessage = results.saveError
     ? 'Run could not be saved'

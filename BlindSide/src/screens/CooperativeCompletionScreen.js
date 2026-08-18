@@ -36,13 +36,7 @@ export default function CooperativeCompletionScreen({ navigation, route }) {
     routes: [{ name: 'HomeDashboard' }],
   });
 
-  const startNewPuzzle = () => navigation.reset({
-    index: 1,
-    routes: [
-      { name: 'HomeDashboard' },
-      { name: 'CooperativeTierSelection' },
-    ],
-  });
+  const startNewPuzzle = () => navigation.replace('CooperativeTierSelection');
 
   const questionsAnswered = results.questionsAnswered ?? 0;
   const questionsSkipped = results.questionsSkipped ?? 0;

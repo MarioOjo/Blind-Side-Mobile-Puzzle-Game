@@ -24,6 +24,13 @@ export default function CooperativeCompletionScreen({ navigation, route }) {
   const { width, height } = useWindowDimensions();
   const results = route.params ?? {};
 
+  const tryAgain = () => navigation.replace('Puzzle', {
+    puzzleId: results.puzzleId,
+    partnerId: results.partnerId,
+    partnerName: results.partnerName,
+    tier: results.tier,
+  });
+
   const goHome = () => navigation.reset({
     index: 0,
     routes: [{ name: 'HomeDashboard' }],
@@ -76,6 +83,7 @@ export default function CooperativeCompletionScreen({ navigation, route }) {
         </View>
 
         <View style={styles.actions}>
+          <PrimaryButton title="Try Again" onPress={tryAgain} />
           <PrimaryButton title="New Cooperative Puzzle" onPress={startNewPuzzle} />
           <PrimaryButton title="Home" variant="outline" onPress={goHome} />
         </View>

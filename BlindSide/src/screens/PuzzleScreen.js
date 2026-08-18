@@ -211,12 +211,15 @@ export default function PuzzleScreen({ navigation, route }) {
       }
 
       navigation.replace('CooperativeCompletion', {
+        puzzleId,
         puzzleName: puzzle.imageName,
         completionTime: elapsed,
         turnCount: turnState?.turnCount ?? 0,
         questionsAnswered: turnState?.questionsAnswered ?? 0,
         questionsSkipped: turnState?.questionsSkipped ?? 0,
+        partnerId: route.params?.partnerId,
         partnerName: route.params?.partnerName ?? 'Partner',
+        tier: route.params?.tier,
       });
       return;
     }

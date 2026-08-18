@@ -27,6 +27,12 @@ export default function SoloCompletionScreen({ navigation, route }) {
     routes: [{ name: 'HomeDashboard' }],
   });
 
+  const tryAgain = () => navigation.replace('Puzzle', {
+    puzzleId: results.puzzleId,
+    difficulty: results.difficulty,
+    category: results.category,
+  });
+
   const startNewPuzzle = () => navigation.reset({
     index: 1,
     routes: [
@@ -83,6 +89,7 @@ export default function SoloCompletionScreen({ navigation, route }) {
         </View>
 
         <View style={styles.actions}>
+          <PrimaryButton title="Try Again" onPress={tryAgain} />
           <PrimaryButton title="New Puzzle" onPress={startNewPuzzle} />
           <PrimaryButton title="Home" variant="outline" onPress={goHome} />
         </View>

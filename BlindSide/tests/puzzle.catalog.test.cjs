@@ -33,7 +33,7 @@ test('fixed difficulties and categories remain visible with real counts', () => 
     [
       { key: 'easy', count: 3 },
       { key: 'medium', count: 1 },
-      { key: 'hard', count: 1 },
+      { key: 'hard', count: 2 },
     ],
   );
   assert.deepEqual(
@@ -55,7 +55,11 @@ test('fixed difficulties and categories remain visible with real counts', () => 
   );
   assert.deepEqual(
     getAvailableCategories(puzzleImages, 'hard').map(({ key, count }) => ({ key, count })),
-    emptyFixedCategories,
+    [
+      { key: 'characters', count: 0 },
+      { key: 'people', count: 1 },
+      { key: 'places', count: 0 },
+    ],
   );
 });
 
@@ -82,7 +86,7 @@ test('catalog filtering is normalized, deterministic, and safe for malformed inp
     ],
   );
   assert.deepEqual(getPuzzlesForSelection([null, {}, ...puzzleImages], { difficulty: 'hard' })
-    .map(({ imageId }) => imageId), ['textures-coffee-beans']);
+    .map(({ imageId }) => imageId), ['textures-coffee-beans', 'people-colorful-portrait']);
 });
 
 test('category routing shows empty state and preserves populated branches', () => {

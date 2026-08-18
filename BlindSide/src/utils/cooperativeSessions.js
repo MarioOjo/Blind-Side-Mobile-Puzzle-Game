@@ -40,12 +40,21 @@ export function presentCooperativeSession(session, currentUid, profilesByUid, no
 
 export function calculateCooperativeStats(sessions, currentUid) {
   const partnerIds = sessions.map((session) => getSessionPartnerId(session, currentUid)).filter(Boolean);
+  const completed = sessions.filter((session) => session.status === 'completed');
 
   return {
-    completedSessions: sessions.filter((session) => session.status === 'completed').length,
+    completedSessions: completed.length,
     partnersPlayedWith: new Set(partnerIds).size,
     piecesPlacedTogether: sessions.reduce(
       (total, session) => total + (session.piecesPlacedTogether ?? 0),
+      0,
+    ),
+    questionsAnswered: completed.reduce(
+      (total, session) => total + (session.questionsAnswered ?? 0),
+      0,
+    ),
+    questionsSkipped: completed.reduce(
+      (total, session) => total + (session.questionsSkipped ?? 0),
       0,
     ),
   };

@@ -211,6 +211,18 @@ export default function ProfileScreen() {
       <Text style={styles.piecesPlaced}>
         Pieces Placed Together: {profileData?.stats.piecesPlacedTogether ?? 0}
       </Text>
+      <View style={styles.statRow}>
+        <Card style={styles.statCard}>
+          <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.victoryGold} />
+          <Text style={styles.statValue}>{profileData?.stats.questionsAnswered ?? 0}</Text>
+          <Text style={styles.statLabel}>Questions Discussed</Text>
+        </Card>
+        <Card style={styles.statCard}>
+          <Ionicons name="play-skip-forward-outline" size={22} color="rgba(255,255,255,0.45)" />
+          <Text style={styles.statValue}>{profileData?.stats.questionsSkipped ?? 0}</Text>
+          <Text style={styles.statLabel}>Questions Skipped</Text>
+        </Card>
+      </View>
       {!isLoading && !loadError && profileData?.stats.completedSessions === 0 ? (
         <Text style={styles.emptyStats}>Complete a puzzle with a partner to build your stats.</Text>
       ) : null}

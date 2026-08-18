@@ -22,6 +22,7 @@ function loadAppModule(relativePath) {
 const {
   createJigsawPieces,
   createTrayOrder,
+  getCooperativeDifficultyLayout,
   getDifficultyLayout,
   getSnapTolerance,
   getTrayPageLayout,
@@ -167,4 +168,37 @@ test('Easy tray scales presentation to keep at least two pieces per page', () =>
     presentationScale: 1,
     slotHeight: 302,
   });
+});
+
+test('cooperative Hard generates 48 pieces without changing solo Hard', () => {
+  const cooperativeHard = getCooperativeDifficultyLayout('hard');
+  const canonical = createJigsawPieces({ difficulty: 'hard', boardWidth: 640, boardHeight: 480 });
+  const experimental = createJigsawPieces({
+    difficulty: 'hard',
+    boardWidth: 640,
+    boardHeight: 480,
+    layoutOverride: cooperativeHard,
+  });
+  const repeated = createJigsawPieces({
+    difficulty: 'hard',
+    boardWidth: 640,
+    boardHeight: 480,
+    layoutOverride: cooperativeHard,
+  });
+
+  assert.deepEqual(getDifficultyLayout('hard'), { columns: 5, rows: 4, pieceCount: 20 });
+  assert.deepEqual(cooperativeHard, { columns: 8, rows: 6, pieceCount: 48 });
+  assert.equal(canonical.pieces.length, 20);
+  assert.deepEqual(
+    { columns: experimental.columns, rows: experimental.rows, pieceCount: experimental.pieceCount },
+    { columns: 8, rows: 6, pieceCount: 48 },
+  );
+  assert.equal(experimental.pieces.length, 48);
+  assert.deepEqual(experimental, repeated);
+  assert.equal(new Set(experimental.pieces.map(({ edgeProfiles }) => (
+    Object.values(edgeProfiles).filter(Boolean).map(({ center, width, curvature }) => (
+      `${center}:${width}:${curvature}`
+    )).join('|')
+  ))).size > 0, true);
+  assert.equal(getSnapTolerance(100, 80, 'hard'), 16);
 });

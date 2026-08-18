@@ -48,9 +48,12 @@ test('session builder produces distinct solo and cooperative ownership shapes', 
     mode: 'cooperative',
     partnerIds: ['alice-id', 'bob-id'],
     puzzleId: 'puzzle-1',
+    tier: 'friendship',
     status: 'completed',
   });
   assert.deepEqual(cooperative.partnerIds, ['alice-id', 'bob-id']);
+  assert.equal(cooperative.tier, 'friendship');
+  assert.equal(cooperative.turnCount, 0);
   assert.equal('userId' in cooperative, false);
   assert.equal(cooperative.piecesPlacedTogether, 0);
 });
@@ -71,6 +74,7 @@ test('session builder rejects invalid ownership combinations', () => {
     mode: 'cooperative',
     partnerIds: ['alice-id', 'alice-id'],
     puzzleId: 'puzzle-1',
+    tier: 'friendship',
     status: 'inProgress',
   }));
 });
@@ -84,15 +88,16 @@ test('question builder accepts only supported relationship tiers', () => {
 });
 
 test('gameplay seed manifest matches puzzle and question schemas', () => {
-  assert.equal(puzzleImages.length, 5);
+  assert.equal(puzzleImages.length, 6);
   assert.equal(questions.length, 15);
-  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 5);
+  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 6);
   assert.equal(new Set(questions.map(({ questionId }) => questionId)).size, 15);
 
   assert.deepEqual(
     puzzleImages.map(({ imageId }) => imageId).sort(),
     [
       'characters-astronaut',
+      'people-colorful-portrait',
       'people-maya',
       'places-santorini',
       'textures-brick-wall',
@@ -109,6 +114,7 @@ test('gameplay seed manifest matches puzzle and question schemas', () => {
   assert.equal(imagesById['characters-astronaut'].difficultyRecommended, 'easy');
   assert.equal(imagesById['textures-brick-wall'].difficultyRecommended, 'medium');
   assert.equal(imagesById['textures-coffee-beans'].difficultyRecommended, 'hard');
+  assert.equal(imagesById['people-colorful-portrait'].difficultyRecommended, 'hard');
   puzzleImages.forEach((image) => {
     assert.deepEqual(buildPuzzleImageDocument(image), image);
     assert.deepEqual(

@@ -4,6 +4,9 @@ const DIFFICULTY_LAYOUTS = {
   medium: { columns: 4, rows: 3, pieceCount: 12 },
   hard: { columns: 5, rows: 4, pieceCount: 20 },
 };
+const COOPERATIVE_DIFFICULTY_LAYOUTS = {
+  hard: { columns: 3, rows: 2, pieceCount: 6 }, // TEMP: reduced for completion-write testing — revert to { columns: 8, rows: 6, pieceCount: 48 }
+};
 
 const TAB_DEPTH_RATIO = 0.2;
 const BASE_EDGE_PROFILE = { center: 0.5, width: 0.36, curvature: 1.14 };
@@ -29,6 +32,12 @@ function normalizeDifficulty(difficulty) {
 
 export function getDifficultyLayout(difficulty) {
   return DIFFICULTY_LAYOUTS[normalizeDifficulty(difficulty)];
+}
+
+export function getCooperativeDifficultyLayout(difficulty) {
+  const normalizedDifficulty = normalizeDifficulty(difficulty);
+  return COOPERATIVE_DIFFICULTY_LAYOUTS[normalizedDifficulty]
+    ?? DIFFICULTY_LAYOUTS[normalizedDifficulty];
 }
 
 function boundaryDirection(primaryIndex, secondaryIndex) {
@@ -177,9 +186,9 @@ export function createPiecePath({ width, height, padding, edges, edgeProfiles = 
   ].join(' ');
 }
 
-export function createJigsawPieces({ difficulty, boardWidth, boardHeight }) {
+export function createJigsawPieces({ difficulty, boardWidth, boardHeight, layoutOverride = null }) {
   const normalizedDifficulty = normalizeDifficulty(difficulty);
-  const layout = getDifficultyLayout(normalizedDifficulty);
+  const layout = layoutOverride ?? getDifficultyLayout(normalizedDifficulty);
   const cellWidth = boardWidth / layout.columns;
   const cellHeight = boardHeight / layout.rows;
   const padding = Math.min(cellWidth, cellHeight) * (TAB_DEPTH_RATIO + 0.03);

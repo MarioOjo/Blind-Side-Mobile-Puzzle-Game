@@ -9,50 +9,243 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import JigsawBoard from '../components/JigsawBoard';
+import CooperativeTurnOverlay from '../components/CooperativeTurnOverlay';
 import { auth } from '../services/FirebaseConfig';
 import {
+  createCooperativeSession,
   createSoloCompletion,
   getPuzzleImage,
+  getQuestionsForTier,
   getSoloPersonalBest,
+  updateCooperativeSession,
 } from '../services/FirestoreService';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 import { applyGlobalOrientationPolicy } from '../utils/orientationPolicy';
 import { comparePersonalBest, normalizeElapsedTime } from '../utils/soloRun';
+import { isValidCooperativeContext } from '../utils/cooperativeCatalog';
+import { getCooperativeDifficultyLayout } from '../utils/jigsaw';
+import {
+  advancePlayer,
+  buildTurnState,
+  confirmQuestion,
+  isQuestionFullyConfirmed,
+  recordCorrectPlacement,
+  skipQuestion,
+} from '../utils/cooperativeTurn';
+
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+function isLandscapeOrientation(orientation) {
+  return (
+    orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT
+    || orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT
+  );
+}
+
+
+// ─── component ──────────────────────────────────────────────────────────────
 
 export default function PuzzleScreen({ navigation, route }) {
   const puzzleId = route.params?.puzzleId;
+  const isCooperative = isValidCooperativeContext(route.params);
+  console.log('[COOP-DEBUG] 0. PuzzleScreen mounted/updated — isCooperative:', isCooperative, 'route.params:', JSON.stringify(route.params));
+
+  // ── orientation ──
   const [orientation, setOrientation] = useState(null);
-  const isLandscape = orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT
-    || orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT;
+  const isLandscape = isLandscapeOrientation(orientation);
+
+  // ── puzzle load ──
   const [puzzle, setPuzzle] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [imageError, setImageError] = useState(false);
+  const handleImageError = useCallback(() => setImageError(true), []);
+
+  // ── shared timer (wall-clock, never pauses) ──
   const [elapsedTime, setElapsedTime] = useState(0);
   const startedAt = useRef(null);
   const timerInterval = useRef(null);
   const completionHandled = useRef(false);
-  const handleImageError = useCallback(() => setImageError(true), []);
 
   const clearTimer = useCallback(() => {
     if (timerInterval.current) clearInterval(timerInterval.current);
     timerInterval.current = null;
   }, []);
 
+  // ── cooperative session ──
+  const cooperativeSessionId = useRef(null);
+  const cooperativeSessionCreatePromise = useRef(null);
+  const [questions, setQuestions] = useState([]);
+  // turnPhase: null | 'confirming' | 'question' | 'complete'
+  // 'confirming' — current player taps to unlock the board (turn 1 and every handoff)
+  // null         — board is active for currentPlayerIndex
+  // 'question'   — both players confirm the relationship question
+  // 'complete'   — puzzle finished
+  // Cooperative starts in 'confirming' so Player 1 must tap before the board activates.
+  const [turnPhase, setTurnPhase] = useState('confirming');
+  const [turnState, setTurnState] = useState(null);
+  // Total piece count is known once geometry is ready; JigsawBoard reports it
+  // via onComplete, but we need it earlier for the "is this the final piece?"
+  // check. We store it when JigsawBoard first reports geometry via a new prop.
+  const totalPiecesRef = useRef(null);
+  const placedCountRef = useRef(0);
+
+  // ── solo timer start (cooperative uses handleConfirmReceipt) ──
   const handleFirstInteraction = useCallback(() => {
-    if (startedAt.current !== null || completionHandled.current) return;
+    if (isCooperative || startedAt.current !== null || completionHandled.current) return;
     startedAt.current = Date.now();
     setElapsedTime(0);
     timerInterval.current = setInterval(() => {
       setElapsedTime(Date.now() - startedAt.current);
     }, 250);
+  }, [isCooperative]);
+
+  // ── cooperative: current player confirms they have the device, unlocking the board ──
+  const handleConfirmReceipt = useCallback(() => {
+    if (!isCooperative || completionHandled.current) return;
+
+    // Start the wall-clock timer on the very first confirm of the session.
+    if (startedAt.current === null) {
+      startedAt.current = Date.now();
+      timerInterval.current = setInterval(() => {
+        setElapsedTime(Date.now() - startedAt.current);
+      }, 250);
+
+      // Create the Firestore session document on first confirm.
+      const uid = auth.currentUser?.uid;
+      const partnerId = route.params?.partnerId;
+      const tier = route.params?.tier;
+      console.log('[COOP-DEBUG] 1. createCooperativeSession called — uid:', uid, 'partnerId:', partnerId, 'tier:', tier, 'puzzleId:', puzzleId);
+      if (uid && partnerId && tier) {
+        cooperativeSessionCreatePromise.current = createCooperativeSession({
+          partnerIds: [uid, partnerId],
+          puzzleId,
+          tier,
+          status: 'inProgress',
+          movesTaken: 0,
+          piecesPlacedTogether: 0,
+          questionsAnswered: 0,
+          questionsSkipped: 0,
+          turnCount: 0,
+        })
+          .then((id) => {
+            cooperativeSessionId.current = id;
+            console.log('[COOP-DEBUG] 2. createCooperativeSession resolved — sessionId:', id);
+            return id;
+          })
+          .catch((err) => {
+            console.error('[COOP-DEBUG] 2. createCooperativeSession FAILED:', err?.message ?? err, err?.code);
+            return null;
+          });
+      } else {
+        console.warn('[COOP-DEBUG] 1. createCooperativeSession SKIPPED — missing uid/partnerId/tier');
+      }
+    }
+
+    setTurnPhase(null);
+  }, [isCooperative, puzzleId, route.params]);
+
+  // ── cooperative: correct non-final placement ──
+  const handleCoopCorrectPlacement = useCallback((nextTurnState) => {
+    const elapsed = startedAt.current !== null ? Date.now() - startedAt.current : 0;
+
+    // Checkpoint Firestore (best-effort, fire-and-forget).
+    if (cooperativeSessionId.current) {
+      updateCooperativeSession(cooperativeSessionId.current, {
+        piecesPlacedTogether: nextTurnState.placedCount,
+        turnCount: nextTurnState.turnCount,
+        questionsAnswered: nextTurnState.questionsAnswered,
+        questionsSkipped: nextTurnState.questionsSkipped,
+        completionTime: normalizeElapsedTime(elapsed),
+      }).catch(() => {});
+    }
+
+    if (nextTurnState.activeQuestion) {
+      setTurnPhase('question');
+    } else {
+      setTurnState((current) => advancePlayer(current));
+      setTurnPhase('confirming');
+    }
   }, []);
 
+  // ── JigsawBoard onSettle callback (cooperative only) ──
+  const handleCoopSettle = useCallback((pieceId) => {
+    if (!isCooperative || completionHandled.current) return;
+
+    placedCountRef.current += 1;
+    const isFinal = totalPiecesRef.current !== null
+      && placedCountRef.current >= totalPiecesRef.current;
+
+    // Final placement is handled by onComplete — skip turn logic.
+    if (isFinal) return;
+
+    setTurnState((current) => {
+      const next = recordCorrectPlacement(current, questions, false);
+      handleCoopCorrectPlacement(next);
+      return next;
+    });
+  }, [handleCoopCorrectPlacement, isCooperative, questions]);
+
+  // ── puzzle complete ──
   const handlePuzzleComplete = useCallback(async () => {
     if (completionHandled.current || !puzzle) return;
     completionHandled.current = true;
+
+    if (isCooperative) {
+      clearTimer();
+      const elapsed = startedAt.current !== null
+        ? normalizeElapsedTime(Date.now() - startedAt.current)
+        : 0;
+
+      console.log('[COOP-DEBUG] 3. handlePuzzleComplete — isCooperative:', isCooperative);
+      console.log('[COOP-DEBUG] 3. cooperativeSessionId.current:', cooperativeSessionId.current);
+      console.log('[COOP-DEBUG] 3. cooperativeSessionCreatePromise.current:', cooperativeSessionCreatePromise.current !== null ? 'exists' : 'null');
+      console.log('[COOP-DEBUG] 3. turnState:', JSON.stringify(turnState));
+      console.log('[COOP-DEBUG] 3. elapsed:', elapsed, 'totalPiecesRef:', totalPiecesRef.current, 'placedCountRef:', placedCountRef.current);
+
+      // Ensure the session document exists before writing completion.
+      // If the create promise is still in-flight, await it now.
+      if (cooperativeSessionCreatePromise.current && !cooperativeSessionId.current) {
+        console.log('[COOP-DEBUG] 3a. sessionId not yet resolved — awaiting create promise...');
+        await cooperativeSessionCreatePromise.current;
+        console.log('[COOP-DEBUG] 3a. create promise settled — sessionId now:', cooperativeSessionId.current);
+      }
+
+      if (cooperativeSessionId.current) {
+        const completionPatch = {
+          status: 'completed',
+          completionTime: elapsed,
+          completedAt: new Date(),
+          piecesPlacedTogether: totalPiecesRef.current ?? placedCountRef.current,
+          turnCount: turnState?.turnCount ?? 0,
+          questionsAnswered: turnState?.questionsAnswered ?? 0,
+          questionsSkipped: turnState?.questionsSkipped ?? 0,
+        };
+        console.log('[COOP-DEBUG] 4. calling updateCooperativeSession — id:', cooperativeSessionId.current, 'patch:', JSON.stringify(completionPatch));
+        try {
+          await updateCooperativeSession(cooperativeSessionId.current, completionPatch);
+          console.log('[COOP-DEBUG] 5. updateCooperativeSession SUCCESS');
+        } catch (writeError) {
+          console.error('[COOP-DEBUG] 5. updateCooperativeSession FAILED — message:', writeError?.message, 'code:', writeError?.code, 'full:', writeError);
+        }
+      } else {
+        console.warn('[COOP-DEBUG] 4. SKIPPED updateCooperativeSession — cooperativeSessionId.current is still null/undefined');
+      }
+
+      navigation.replace('CooperativeCompletion', {
+        puzzleName: puzzle.imageName,
+        completionTime: elapsed,
+        turnCount: turnState?.turnCount ?? 0,
+        questionsAnswered: turnState?.questionsAnswered ?? 0,
+        questionsSkipped: turnState?.questionsSkipped ?? 0,
+        partnerName: route.params?.partnerName ?? 'Partner',
+      });
+      return;
+    }
+
+    // ── solo path (unchanged) ──
     const completionTime = normalizeElapsedTime(
       startedAt.current === null ? 0 : Date.now() - startedAt.current,
     );
@@ -105,25 +298,44 @@ export default function PuzzleScreen({ navigation, route }) {
       sessionId,
       saveError,
     });
-  }, [clearTimer, navigation, puzzle, puzzleId]);
+  }, [clearTimer, isCooperative, navigation, puzzle, puzzleId, turnState]);
 
+  // ── question skip: either player taps alone, no second confirm needed ──
+  const handleSkipQuestion = useCallback(() => {
+    setTurnState((current) => skipQuestion(current));
+    setTurnPhase('confirming');
+  }, []);
+
+  // ── question confirmation ──
+  const handleConfirmQuestion = useCallback((playerIndex) => {
+    setTurnState((current) => {
+      const next = confirmQuestion(current, playerIndex);
+      if (isQuestionFullyConfirmed(next)) {
+        // Advance player here so 'confirming' immediately shows the next player's name.
+        const advanced = advancePlayer(next);
+        setTurnPhase('confirming');
+        return advanced;
+      }
+      return next;
+    });
+  }, []);
+
+  // ── orientation subscription ──
   useEffect(() => {
     let isMounted = true;
     let orientationRevision = 0;
 
     const orientationSubscription = ScreenOrientation.addOrientationChangeListener((event) => {
       orientationRevision += 1;
-      if (isMounted) setOrientation(event.orientationInfo.orientation);
+      const next = event.orientationInfo.orientation;
+      if (isMounted) setOrientation(next);
     });
 
     const readInitialOrientation = async () => {
       const revisionAtRequest = orientationRevision;
-
       try {
-        const currentOrientation = await ScreenOrientation.getOrientationAsync();
-        if (isMounted && orientationRevision === revisionAtRequest) {
-          setOrientation(currentOrientation);
-        }
+        const current = await ScreenOrientation.getOrientationAsync();
+        if (isMounted && orientationRevision === revisionAtRequest) setOrientation(current);
       } catch (error) {}
     };
 
@@ -135,6 +347,7 @@ export default function PuzzleScreen({ navigation, route }) {
     };
   }, []);
 
+  // ── puzzle load ──
   useEffect(() => {
     let isActive = true;
 
@@ -160,13 +373,58 @@ export default function PuzzleScreen({ navigation, route }) {
     return () => { isActive = false; };
   }, [puzzleId]);
 
+  // ── cooperative setup: load questions + init turn state ──
+  useEffect(() => {
+    if (!isCooperative) return;
+
+    const tier = route.params?.tier;
+    const partnerAName = route.params?.partnerName ?? 'Partner 1';
+    const uid = auth.currentUser?.uid;
+
+    // We need the signed-in user's display name for Player A.
+    // Fall back to 'You' if the profile isn't available here.
+    const playerAName = 'You';
+    const playerBName = partnerAName;
+
+    setTurnState(buildTurnState(playerAName, playerBName));
+    placedCountRef.current = 0;
+    totalPiecesRef.current = null;
+
+    if (tier) {
+      getQuestionsForTier(tier)
+        .then((fetched) => setQuestions(fetched))
+        .catch(() => setQuestions([]));
+    }
+  }, [isCooperative, puzzleId, route.params]);
+
+  // ── reset on puzzle change ──
   useEffect(() => {
     clearTimer();
     startedAt.current = null;
     completionHandled.current = false;
+    cooperativeSessionId.current = null;
+    cooperativeSessionCreatePromise.current = null;
+    placedCountRef.current = 0;
+    totalPiecesRef.current = null;
     setElapsedTime(0);
+    setTurnPhase(isCooperative ? 'confirming' : null);
     return clearTimer;
-  }, [clearTimer, puzzleId]);
+  }, [clearTimer, isCooperative, puzzleId]);
+
+  // ── derive total piece count from layout so we can detect the final piece ──
+  const layoutOverride = isCooperative
+    ? getCooperativeDifficultyLayout(puzzle?.difficultyRecommended)
+    : null;
+
+  useEffect(() => {
+    if (layoutOverride) {
+      totalPiecesRef.current = layoutOverride.pieceCount;
+    }
+  }, [layoutOverride]);
+
+  // ── board is non-interactive during confirming/question phases ──
+  const boardDisabled = isCooperative
+    && (turnPhase === 'confirming' || turnPhase === 'question');
 
   return (
     <View style={styles.container}>
@@ -187,9 +445,13 @@ export default function PuzzleScreen({ navigation, route }) {
       {isLandscape && !isLoading && puzzle && !imageError ? (
         <JigsawBoard
           puzzle={puzzle}
+          layoutOverride={layoutOverride}
           elapsedTime={elapsedTime}
-          onFirstInteraction={handleFirstInteraction}
+          showTimer={!isCooperative}
+          disabled={boardDisabled}
+          onFirstInteraction={isCooperative ? undefined : handleFirstInteraction}
           onComplete={handlePuzzleComplete}
+          onSettle={isCooperative ? handleCoopSettle : undefined}
           onImageError={handleImageError}
         />
       ) : null}
@@ -209,6 +471,19 @@ export default function PuzzleScreen({ navigation, route }) {
             <Text style={styles.orientationText}>This puzzle is played in landscape.</Text>
           </View>
         </View>
+      ) : null}
+
+      {isLandscape && isCooperative && turnState && turnPhase !== null && turnPhase !== 'complete' ? (
+        <CooperativeTurnOverlay
+          phase={turnPhase}
+          partnerNames={turnState.partnerNames}
+          currentPlayerIndex={turnState.currentPlayerIndex}
+          activeQuestion={turnState.activeQuestion}
+          questionConfirmedBy={turnState.questionConfirmedBy}
+          onConfirmReceipt={handleConfirmReceipt}
+          onConfirmQuestion={handleConfirmQuestion}
+          onSkipQuestion={handleSkipQuestion}
+        />
       ) : null}
     </View>
   );
@@ -271,4 +546,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

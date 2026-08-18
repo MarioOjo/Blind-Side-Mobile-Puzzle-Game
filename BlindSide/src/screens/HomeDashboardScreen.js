@@ -130,12 +130,21 @@ export default function HomeDashboardScreen({ navigation }) {
         ) : null}
         {!isLoading && !loadError && dashboard?.partners.map((partner, index) => (
           <Fragment key={partner.uid}>
-            <View style={styles.partnerRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Play with ${partner.username}`}
+              onPress={() => navigation.push('CooperativeTierSelection', {
+                partnerId: partner.uid,
+                partnerName: partner.username,
+              })}
+              style={({ pressed }) => [styles.partnerRow, pressed && styles.partnerRowPressed]}
+            >
               <View style={styles.partnerAvatar}>
                 <Text style={styles.partnerAvatarText}>{partner.username.charAt(0).toUpperCase()}</Text>
               </View>
               <Text style={styles.partnerName}>{partner.username}</Text>
-            </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.neonCyan} />
+            </Pressable>
             {index < dashboard.partners.length - 1 && <View style={styles.divider} />}
           </Fragment>
         ))}
@@ -267,6 +276,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: 6,
+  },
+  partnerRowPressed: {
+    backgroundColor: 'rgba(6,182,212,0.08)',
   },
   partnerAvatar: {
     width: 40,
@@ -282,6 +296,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   partnerName: {
+    flex: 1,
     color: colors.white,
     fontFamily: typography.subheading,
     fontSize: 15,

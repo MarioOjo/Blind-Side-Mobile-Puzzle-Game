@@ -31,9 +31,10 @@ export function validateSession(input) {
       || !Array.isArray(input.partnerIds)
       || input.partnerIds.length !== 2
       || new Set(input.partnerIds).size !== 2
+      || !input.tier
     )
   ) {
-    throw new Error('Cooperative sessions require two distinct partnerIds and no userId.');
+    throw new Error('Cooperative sessions require two distinct partnerIds, a tier, and no userId.');
   }
 }
 
@@ -62,7 +63,10 @@ export function buildSessionDocument(input) {
   return {
     ...document,
     partnerIds: input.partnerIds,
+    tier: input.tier,
+    turnCount: input.turnCount ?? 0,
     piecesPlacedTogether: input.piecesPlacedTogether ?? 0,
     questionsAnswered: input.questionsAnswered ?? 0,
+    questionsSkipped: input.questionsSkipped ?? 0,
   };
 }

@@ -36,8 +36,8 @@ function getFirebaseRcProject() {
 }
 
 function validateManifest() {
-  if (puzzleImages.length !== 5 || questions.length !== 15) {
-    throw new Error('Expected 5 puzzle images and 15 questions.');
+  if (puzzleImages.length !== 6 || questions.length !== 15) {
+    throw new Error('Expected 6 puzzle images and 15 questions.');
   }
 
   const imageIds = new Set();

@@ -55,21 +55,29 @@ service cloud.firestore {
 
     function validCooperativeSession(data) {
       return data.keys().hasAll([
-          'mode', 'partnerIds', 'puzzleId', 'status', 'completionTime', 'completedAt',
-          'movesTaken', 'createdAt', 'piecesPlacedTogether', 'questionsAnswered'
+          'mode', 'partnerIds', 'puzzleId', 'tier', 'status', 'completionTime', 'completedAt',
+          'movesTaken', 'createdAt', 'turnCount', 'piecesPlacedTogether', 'questionsAnswered',
+          'questionsSkipped'
         ])
         && data.keys().hasOnly([
-          'mode', 'partnerIds', 'puzzleId', 'status', 'completionTime', 'completedAt',
-          'movesTaken', 'createdAt', 'piecesPlacedTogether', 'questionsAnswered'
+          'mode', 'partnerIds', 'puzzleId', 'tier', 'status', 'completionTime', 'completedAt',
+          'movesTaken', 'createdAt', 'turnCount', 'piecesPlacedTogether', 'questionsAnswered',
+          'questionsSkipped'
         ])
         && data.mode == 'cooperative'
         && data.partnerIds is list
         && data.partnerIds.size() == 2
         && data.partnerIds[0] != data.partnerIds[1]
+        && data.tier is string
+        && data.tier.size() > 0
+        && data.turnCount is int
+        && data.turnCount >= 0
         && data.piecesPlacedTogether is int
         && data.piecesPlacedTogether >= 0
         && data.questionsAnswered is int
         && data.questionsAnswered >= 0
+        && data.questionsSkipped is int
+        && data.questionsSkipped >= 0
         && validCommonSession(data);
     }
 

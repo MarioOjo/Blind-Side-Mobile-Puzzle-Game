@@ -21,6 +21,7 @@ import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 import { formatElapsedTime } from '../utils/soloRun';
+import { getJigsawBoardLayout } from '../utils/jigsawBoardLayout';
 
 const WORKSPACE_GAP = 16;
 const TRAY_MIN_WIDTH = 150;
@@ -55,7 +56,7 @@ function PlacedPiece({ piece, imageUrl, boardWidth, boardHeight }) {
           y={piece.padding - piece.targetY}
           width={boardWidth}
           height={boardHeight}
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid slice"
           clipPath={`url(#${clipId})`}
         />
         <Path d={piece.path} fill="none" stroke={colors.victoryGold} strokeWidth={2} />
@@ -66,9 +67,13 @@ function PlacedPiece({ piece, imageUrl, boardWidth, boardHeight }) {
 
 export default function JigsawBoard({
   puzzle,
+  layoutOverride,
   elapsedTime,
-  onFirstInteraction,
+  showTimer = true,
+  disabled = false,
+  onFirstInteraction = () => {},
   onComplete,
+  onSettle,
   onImageError,
 }) {
   const [workspace, setWorkspace] = useState({ width: 0, height: 0 });
@@ -105,17 +110,22 @@ export default function JigsawBoard({
       TRAY_MAX_WIDTH,
       Math.max(TRAY_MIN_WIDTH, workspace.width * 0.25),
     );
-    const boardAreaWidth = workspace.width - trayWidth - WORKSPACE_GAP;
-    const imageAspect = imageSize.width / imageSize.height;
-    const boardWidth = Math.min(boardAreaWidth, workspace.height * imageAspect);
-    const boardHeight = boardWidth / imageAspect;
-    const boardX = (boardAreaWidth - boardWidth) / 2;
-    const boardY = (workspace.height - boardHeight) / 2;
-    const trayX = boardAreaWidth + WORKSPACE_GAP;
+    const boardLayout = getJigsawBoardLayout({
+      workspaceWidth: workspace.width,
+      workspaceHeight: workspace.height,
+      trayWidth,
+      workspaceGap: WORKSPACE_GAP,
+      imageWidth: imageSize.width,
+      imageHeight: imageSize.height,
+    });
+    const { boardX, boardY, boardWidth, boardHeight } = boardLayout;
+    const trayX = boardWidth + WORKSPACE_GAP;
     const generated = createJigsawPieces({
       difficulty: puzzle.difficultyRecommended,
       boardWidth,
       boardHeight,
+      cover: boardLayout.cover,
+      layoutOverride,
     });
     const trayHeaderHeight = TRAY_HEADER_HEIGHT;
     const availableTrayHeight = Math.max(1, workspace.height - trayHeaderHeight);
@@ -138,7 +148,7 @@ export default function JigsawBoard({
       trayHeaderHeight,
       ...trayPageLayout,
     };
-  }, [imageSize, puzzle.difficultyRecommended, workspace.height, workspace.width]);
+  }, [imageSize, layoutOverride, puzzle.difficultyRecommended, workspace.height, workspace.width]);
 
   const unplacedPieces = useMemo(() => {
     if (!geometry) return [];
@@ -180,6 +190,7 @@ export default function JigsawBoard({
     setIsDragging(false);
     if (!placed) return;
     setPlacedIds((current) => new Set(current).add(pieceId));
+    onSettle?.(pieceId);
   };
 
   if (!imageSize) {
@@ -213,7 +224,7 @@ export default function JigsawBoard({
             <Image
               source={{ uri: puzzle.imageURL }}
               style={styles.boardGuideImage}
-              resizeMode="stretch"
+              resizeMode="cover"
               onError={onImageError}
             />
             <Svg style={StyleSheet.absoluteFillObject}>
@@ -255,7 +266,9 @@ export default function JigsawBoard({
                 <Text style={styles.progressText}>
                   {placedIds.size}/{geometry.pieceCount}
                 </Text>
-                <Text style={styles.timerText}>{formatElapsedTime(elapsedTime)}</Text>
+                {showTimer ? (
+                  <Text style={styles.timerText}>{formatElapsedTime(elapsedTime)}</Text>
+                ) : null}
                 <View style={styles.pageControls}>
                   <Pressable
                     accessibilityLabel="Previous piece page"
@@ -287,7 +300,7 @@ export default function JigsawBoard({
             </View>
           </View>
 
-          {visiblePieces.map((piece, visibleIndex) => {
+          {!disabled && visiblePieces.map((piece, visibleIndex) => {
             const scaledRenderWidth = piece.renderWidth * geometry.presentationScale;
             const scaledRenderHeight = piece.renderHeight * geometry.presentationScale;
             const visualLeft = geometry.trayX

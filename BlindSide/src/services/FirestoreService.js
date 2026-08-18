@@ -10,6 +10,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where,
 } from 'firebase/firestore';
 import { buildPuzzleImageDocument } from '../models/PuzzleImage';
@@ -53,6 +54,22 @@ export function getSession(sessionId) {
   return readDocument(COLLECTIONS.sessions, sessionId);
 }
 
+export async function createCooperativeSession(input) {
+  const reference = await addDoc(
+    collection(db, COLLECTIONS.sessions),
+    buildSessionDocument({
+      ...input,
+      mode: 'cooperative',
+      status: 'inProgress',
+    }),
+  );
+  return reference.id;
+}
+
+export function updateCooperativeSession(sessionId, patch) {
+  return updateDoc(doc(db, COLLECTIONS.sessions, sessionId), patch);
+}
+
 export async function createSoloCompletion(input) {
   const reference = await addDoc(
     collection(db, COLLECTIONS.sessions),
@@ -93,6 +110,15 @@ export async function getCompletedSoloSessions(uid) {
   return snapshot.docs.map((session) => ({ id: session.id, ...session.data() }));
 }
 
+export async function getQuestionsForTier(tier) {
+  const tierQuery = query(
+    collection(db, COLLECTIONS.questions),
+    where('tier', '==', tier),
+  );
+  const snapshot = await getDocs(tierQuery);
+  return snapshot.docs.map((q) => ({ id: q.id, ...q.data() }));
+}
+
 export async function getCooperativeSessions(uid) {
   const sessionsQuery = query(
     collection(db, COLLECTIONS.sessions),
@@ -102,6 +128,14 @@ export async function getCooperativeSessions(uid) {
   );
   const snapshot = await getDocs(sessionsQuery);
   return snapshot.docs.map((session) => ({ id: session.id, ...session.data() }));
+}
+
+export async function getCompletedCooperativeSessions(uid) {
+  // Filters client-side: adding status to the Firestore query would require a new composite
+  // index beyond the existing (mode, partnerIds, createdAt) one. Per-user result sets are
+  // small enough that fetching all and filtering locally is fine.
+  const sessions = await getCooperativeSessions(uid);
+  return sessions.filter((session) => session.status === 'completed');
 }
 
 export function createPuzzleImage(input) {
@@ -117,10 +151,13 @@ export function getPuzzleImage(imageId) {
 
 export async function getPuzzleImages() {
   const snapshot = await getDocs(collection(db, COLLECTIONS.puzzleImages));
-  return snapshot.docs.map((puzzle) => buildPuzzleImageDocument({
-    ...puzzle.data(),
-    imageId: puzzle.id,
-  }));
+  return snapshot.docs.flatMap((puzzle) => {
+    try {
+      return [buildPuzzleImageDocument({ ...puzzle.data(), imageId: puzzle.id })];
+    } catch {
+      return [];
+    }
+  });
 }
 
 export function createQuestion(input) {

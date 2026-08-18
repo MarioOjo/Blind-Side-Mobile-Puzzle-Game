@@ -13,12 +13,14 @@
     "seed:firestore:production": "node scripts/seed-firestore.cjs --production",
     "seed:firestore:verify": "node scripts/verify-firestore-seed.cjs",
     "test:catalog": "node --test tests/puzzle.catalog.test.cjs",
+    "test:cooperative-catalog": "node --test tests/cooperative.catalog.test.cjs",
+    "test:jigsaw-board": "node --test tests/jigsaw-board-layout.test.cjs",
     "test:jigsaw": "node --test tests/jigsaw.test.cjs",
     "test:solo": "node --test tests/solo.run.test.cjs",
     "test:solo-stats": "node --test tests/solo.stats.test.cjs",
     "test:models": "node --test tests/models.test.cjs",
     "test:auth": "node --test tests/firebase.config.test.cjs tests/auth.service.test.cjs",
-    "test:firebase": "firebase emulators:exec --only firestore --project demo-blindside \"node --test tests/solo.run.test.cjs tests/solo.stats.test.cjs tests/puzzle.catalog.test.cjs tests/jigsaw.test.cjs tests/models.test.cjs tests/firebase.config.test.cjs tests/auth.service.test.cjs tests/firestore.rules.test.cjs\""
+    "test:firebase": "firebase emulators:exec --only firestore --project demo-blindside \"node --test tests/jigsaw-board-layout.test.cjs tests/cooperative.catalog.test.cjs tests/solo.run.test.cjs tests/solo.stats.test.cjs tests/puzzle.catalog.test.cjs tests/jigsaw.test.cjs tests/models.test.cjs tests/firebase.config.test.cjs tests/auth.service.test.cjs tests/firestore.rules.test.cjs\""
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

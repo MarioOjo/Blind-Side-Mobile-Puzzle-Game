@@ -20,7 +20,7 @@ function getPartnerErrorMessage(error) {
   return PARTNER_ERROR_MESSAGES[error?.code] ?? 'Unable to connect right now. Please try again.';
 }
 
-export default function PartnerConnectionScreen({ currentUser } = {}) {
+export default function PartnerConnectionScreen({ currentUser, navigation } = {}) {
   const signedInUser = currentUser === undefined ? auth.currentUser : currentUser;
   const [username, setUsername] = useState('');
   const [searchResult, setSearchResult] = useState(null);
@@ -65,6 +65,10 @@ export default function PartnerConnectionScreen({ currentUser } = {}) {
       await addPartner(signedInUser.uid, searchResult.id);
       setIsConnected(true);
       setMessage(`You and ${searchResult.username} are now partners.`);
+      navigation?.push('CooperativeTierSelection', {
+        partnerId: searchResult.id,
+        partnerName: searchResult.username,
+      });
     } catch (error) {
       setMessage(getPartnerErrorMessage(error));
     } finally {

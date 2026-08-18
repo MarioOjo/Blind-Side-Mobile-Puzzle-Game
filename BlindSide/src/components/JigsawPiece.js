@@ -115,7 +115,7 @@ export default function JigsawPiece({
             y={piece.padding - piece.targetY}
             width={boardWidth}
             height={boardHeight}
-            preserveAspectRatio="none"
+            preserveAspectRatio="xMidYMid slice"
             clipPath={`url(#${clipId})`}
           />
           <Path

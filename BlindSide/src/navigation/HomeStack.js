@@ -4,6 +4,10 @@ import HomeDashboardScreen from '../screens/HomeDashboardScreen';
 import DifficultySelectionScreen from '../screens/DifficultySelectionScreen';
 import CategorySelectionScreen from '../screens/CategorySelectionScreen';
 import PuzzleSelectionScreen from '../screens/PuzzleSelectionScreen';
+import CooperativeTierSelectionScreen from '../screens/CooperativeTierSelectionScreen';
+import CooperativeCategorySelectionScreen from '../screens/CooperativeCategorySelectionScreen';
+import CooperativePuzzleSelectionScreen from '../screens/CooperativePuzzleSelectionScreen';
+import CooperativeCompletionScreen from '../screens/CooperativeCompletionScreen';
 import PuzzleScreen from '../screens/PuzzleScreen';
 import SoloCompletionScreen from '../screens/SoloCompletionScreen';
 import ChallengeScreen from '../screens/ChallengeScreen';
@@ -47,10 +51,30 @@ export default function HomeStack() {
         component={PuzzleSelectionScreen}
         options={{ title: 'Choose Puzzle' }}
       />
+      <Stack.Screen
+        name="CooperativeTierSelection"
+        component={CooperativeTierSelectionScreen}
+        options={{ title: 'Choose Tier' }}
+      />
+      <Stack.Screen
+        name="CooperativeCategorySelection"
+        component={CooperativeCategorySelectionScreen}
+        options={{ title: 'Choose Category' }}
+      />
+      <Stack.Screen
+        name="CooperativePuzzleSelection"
+        component={CooperativePuzzleSelectionScreen}
+        options={{ title: 'Choose Puzzle' }}
+      />
       <Stack.Screen name="Puzzle" component={PuzzleScreen} options={{ title: 'Gameplay' }} />
       <Stack.Screen
         name="SoloCompletion"
         component={SoloCompletionScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CooperativeCompletion"
+        component={CooperativeCompletionScreen}
         options={{ headerShown: false }}
       />
       {/* Placeholder detail screens remain available for the challenge flow. */}

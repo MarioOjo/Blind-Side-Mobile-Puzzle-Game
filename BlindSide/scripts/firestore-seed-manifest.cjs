@@ -35,6 +35,13 @@ const puzzleImages = [
     imageURL: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=85',
     difficultyRecommended: 'hard',
   },
+  {
+    imageId: 'people-colorful-portrait',
+    imageName: 'Natural Portrait',
+    category: 'people',
+    imageURL: 'https://images.unsplash.com/photo-1632765854612-9b02b6ec2b15?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'hard',
+  },
 ];
 
 const questions = [

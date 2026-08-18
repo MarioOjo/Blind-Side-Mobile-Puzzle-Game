@@ -28,7 +28,6 @@ import {
 
 const QUICK_START_ACTIONS = [
   { key: 'puzzle', label: 'New Puzzle', icon: 'extension-puzzle-outline' },
-  { key: 'partner', label: 'Add Partner', icon: 'person-add-outline' },
   { key: 'results', label: 'Puzzle History', icon: 'trophy-outline' },
 ];
 
@@ -82,7 +81,6 @@ export default function HomeDashboardScreen({ navigation }) {
 
   const handleQuickStart = (key) => {
     if (key === 'puzzle') navigation.navigate('DifficultySelection');
-    if (key === 'partner') navigation.navigate('PartnerConnection');
     if (key === 'results') navigation.navigate('Results');
   };
 

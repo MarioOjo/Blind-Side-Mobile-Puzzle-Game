@@ -32,30 +32,49 @@ const {
 
 test('session builder produces distinct solo and cooperative ownership shapes', () => {
   const solo = buildSessionDocument({
-    mode: 'solo', userId: 'alice-id', puzzleId: 'puzzle-1', status: 'inProgress',
+    mode: 'solo',
+    userId: 'alice-id',
+    puzzleId: 'puzzle-1',
+    difficulty: 'easy',
+    category: 'places',
+    status: 'inProgress',
   });
   assert.equal(solo.userId, 'alice-id');
+  assert.equal(solo.difficulty, 'easy');
+  assert.equal(solo.category, 'places');
   assert.equal('partnerIds' in solo, false);
 
   const cooperative = buildSessionDocument({
     mode: 'cooperative',
     partnerIds: ['alice-id', 'bob-id'],
     puzzleId: 'puzzle-1',
+    tier: 'friendship',
     status: 'completed',
   });
   assert.deepEqual(cooperative.partnerIds, ['alice-id', 'bob-id']);
+  assert.equal(cooperative.tier, 'friendship');
+  assert.equal(cooperative.turnCount, 0);
   assert.equal('userId' in cooperative, false);
   assert.equal(cooperative.piecesPlacedTogether, 0);
 });
 
 test('session builder rejects invalid ownership combinations', () => {
   assert.throws(() => buildSessionDocument({
-    mode: 'solo', partnerIds: ['alice-id', 'bob-id'], puzzleId: 'puzzle-1', status: 'inProgress',
+    mode: 'solo',
+    partnerIds: ['alice-id', 'bob-id'],
+    puzzleId: 'puzzle-1',
+    difficulty: 'easy',
+    category: 'places',
+    status: 'inProgress',
+  }));
+  assert.throws(() => buildSessionDocument({
+    mode: 'solo', userId: 'alice-id', puzzleId: 'puzzle-1', status: 'completed',
   }));
   assert.throws(() => buildSessionDocument({
     mode: 'cooperative',
     partnerIds: ['alice-id', 'alice-id'],
     puzzleId: 'puzzle-1',
+    tier: 'friendship',
     status: 'inProgress',
   }));
 });
@@ -69,19 +88,33 @@ test('question builder accepts only supported relationship tiers', () => {
 });
 
 test('gameplay seed manifest matches puzzle and question schemas', () => {
-  assert.equal(puzzleImages.length, 3);
+  assert.equal(puzzleImages.length, 6);
   assert.equal(questions.length, 15);
-  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 3);
+  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 6);
   assert.equal(new Set(questions.map(({ questionId }) => questionId)).size, 15);
 
   assert.deepEqual(
-    puzzleImages.map(({ category }) => category).sort(),
-    ['characters', 'people', 'places'],
+    puzzleImages.map(({ imageId }) => imageId).sort(),
+    [
+      'characters-astronaut',
+      'people-colorful-portrait',
+      'people-maya',
+      'places-santorini',
+      'textures-brick-wall',
+      'textures-coffee-beans',
+    ],
   );
   assert.deepEqual(
-    puzzleImages.map(({ difficultyRecommended }) => difficultyRecommended).sort(),
-    ['easy', 'hard', 'medium'],
+    [...new Set(puzzleImages.map(({ category }) => category))].sort(),
+    ['characters', 'people', 'places', 'textures'],
   );
+  const imagesById = Object.fromEntries(puzzleImages.map((image) => [image.imageId, image]));
+  assert.equal(imagesById['people-maya'].difficultyRecommended, 'easy');
+  assert.equal(imagesById['places-santorini'].difficultyRecommended, 'easy');
+  assert.equal(imagesById['characters-astronaut'].difficultyRecommended, 'easy');
+  assert.equal(imagesById['textures-brick-wall'].difficultyRecommended, 'medium');
+  assert.equal(imagesById['textures-coffee-beans'].difficultyRecommended, 'hard');
+  assert.equal(imagesById['people-colorful-portrait'].difficultyRecommended, 'hard');
   puzzleImages.forEach((image) => {
     assert.deepEqual(buildPuzzleImageDocument(image), image);
     assert.deepEqual(

@@ -17,8 +17,11 @@ export function validateSession(input) {
     throw new Error('Sessions require a puzzleId.');
   }
 
-  if (input.mode === 'solo' && (!input.userId || input.partnerIds)) {
-    throw new Error('Solo sessions require userId and cannot include partnerIds.');
+  if (
+    input.mode === 'solo'
+    && (!input.userId || input.partnerIds || !input.difficulty || !input.category)
+  ) {
+    throw new Error('Solo sessions require userId, difficulty, category, and no partnerIds.');
   }
 
   if (
@@ -28,9 +31,10 @@ export function validateSession(input) {
       || !Array.isArray(input.partnerIds)
       || input.partnerIds.length !== 2
       || new Set(input.partnerIds).size !== 2
+      || !input.tier
     )
   ) {
-    throw new Error('Cooperative sessions require two distinct partnerIds and no userId.');
+    throw new Error('Cooperative sessions require two distinct partnerIds, a tier, and no userId.');
   }
 }
 
@@ -48,13 +52,21 @@ export function buildSessionDocument(input) {
   };
 
   if (input.mode === 'solo') {
-    return { ...document, userId: input.userId };
+    return {
+      ...document,
+      userId: input.userId,
+      difficulty: input.difficulty,
+      category: input.category,
+    };
   }
 
   return {
     ...document,
     partnerIds: input.partnerIds,
+    tier: input.tier,
+    turnCount: input.turnCount ?? 0,
     piecesPlacedTogether: input.piecesPlacedTogether ?? 0,
     questionsAnswered: input.questionsAnswered ?? 0,
+    questionsSkipped: input.questionsSkipped ?? 0,
   };
 }

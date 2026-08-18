@@ -1,4 +1,4 @@
-// Shows the signed-in profile, cooperative statistics, recent sessions, and account actions.
+// Shows the signed-in profile, isolated solo/cooperative stats, recent sessions, and account actions.
 import { useCallback, useState } from 'react';
 import {
   Image,
@@ -13,13 +13,16 @@ import { useFocusEffect } from '@react-navigation/native';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
 import PuzzleSessionListItem from '../components/PuzzleSessionListItem';
+import SoloPuzzleStatRow from '../components/SoloPuzzleStatRow';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 import { logoutUser } from '../services/AuthService';
 import { auth } from '../services/FirebaseConfig';
 import {
+  getCompletedSoloSessions,
   getCooperativeSessions,
+  getPuzzleImages,
   getUserProfile,
   getUserProfiles,
 } from '../services/FirestoreService';
@@ -29,6 +32,8 @@ import {
   indexProfilesByUid,
   presentCooperativeSession,
 } from '../utils/cooperativeSessions';
+import { calculateSoloStats } from '../utils/soloStats';
+import { formatElapsedTime } from '../utils/soloRun';
 
 export default function ProfileScreen() {
   const { width, height } = useWindowDimensions();
@@ -38,6 +43,9 @@ export default function ProfileScreen() {
   const [profileData, setProfileData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [soloStats, setSoloStats] = useState(null);
+  const [isSoloLoading, setIsSoloLoading] = useState(true);
+  const [soloLoadError, setSoloLoadError] = useState('');
 
   useFocusEffect(useCallback(() => {
     let isActive = true;
@@ -80,6 +88,32 @@ export default function ProfileScreen() {
     return () => { isActive = false; };
   }, []));
 
+  useFocusEffect(useCallback(() => {
+    let isActive = true;
+
+    const loadSoloStats = async () => {
+      setIsSoloLoading(true);
+      setSoloLoadError('');
+
+      try {
+        const uid = auth.currentUser?.uid;
+        if (!uid) throw new Error('No authenticated user.');
+        const [sessions, puzzles] = await Promise.all([
+          getCompletedSoloSessions(uid),
+          getPuzzleImages(),
+        ]);
+        if (isActive) setSoloStats(calculateSoloStats(sessions, puzzles));
+      } catch (error) {
+        if (isActive) setSoloLoadError('Unable to load solo stats.');
+      } finally {
+        if (isActive) setIsSoloLoading(false);
+      }
+    };
+
+    loadSoloStats();
+    return () => { isActive = false; };
+  }, []));
+
   const handleLogout = async () => {
     setLogoutError('');
     setIsLoggingOut(true);
@@ -119,6 +153,49 @@ export default function ProfileScreen() {
 
       {loadError ? <Text style={styles.loadError}>{loadError}</Text> : null}
 
+      <Text style={styles.subheading}>Solo Stats</Text>
+      {isSoloLoading ? <Text style={styles.stateText}>Loading solo stats...</Text> : null}
+      {!isSoloLoading && soloLoadError ? (
+        <Text style={styles.loadError}>{soloLoadError}</Text>
+      ) : null}
+      {!isSoloLoading && !soloLoadError ? (
+        <>
+          <View style={styles.soloStatGrid}>
+            <Card style={styles.soloStatCard}>
+              <Ionicons name="checkmark-circle-outline" size={20} color={colors.neonCyan} />
+              <Text style={styles.statValue}>{soloStats?.completedPuzzles ?? 0}</Text>
+              <Text style={styles.statLabel}>Puzzles Completed</Text>
+            </Card>
+            <Card style={styles.soloStatCard}>
+              <Ionicons name="time-outline" size={20} color={colors.electricBlue} />
+              <Text style={styles.statValue}>{formatElapsedTime(soloStats?.totalPlayTime ?? 0)}</Text>
+              <Text style={styles.statLabel}>Total Play Time</Text>
+            </Card>
+            <Card style={styles.soloStatCard}>
+              <Ionicons name="speedometer-outline" size={20} color={colors.victoryGold} />
+              <Text style={styles.statValue}>
+                {soloStats?.fastestCompletionTime === null
+                  ? '--'
+                  : formatElapsedTime(soloStats?.fastestCompletionTime)}
+              </Text>
+              <Text style={styles.statLabel}>Fastest Time</Text>
+            </Card>
+          </View>
+
+          <Text style={styles.soloListHeading}>Personal Bests</Text>
+          {soloStats?.puzzleBests.length === 0 ? (
+            <Text style={styles.stateText}>Complete a solo puzzle to build your stats.</Text>
+          ) : null}
+          <View style={styles.soloList}>
+            {soloStats?.puzzleBests.map((puzzle) => (
+              <SoloPuzzleStatRow key={puzzle.puzzleId} puzzle={puzzle} />
+            ))}
+          </View>
+        </>
+      ) : null}
+
+      <Text style={styles.subheading}>Cooperative Stats</Text>
+
       <View style={styles.statRow}>
         <Card style={styles.statCard}>
           <Ionicons name="checkmark-done-circle" size={22} color={colors.neonCyan} />
@@ -134,6 +211,18 @@ export default function ProfileScreen() {
       <Text style={styles.piecesPlaced}>
         Pieces Placed Together: {profileData?.stats.piecesPlacedTogether ?? 0}
       </Text>
+      <View style={styles.statRow}>
+        <Card style={styles.statCard}>
+          <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.victoryGold} />
+          <Text style={styles.statValue}>{profileData?.stats.questionsAnswered ?? 0}</Text>
+          <Text style={styles.statLabel}>Questions Discussed</Text>
+        </Card>
+        <Card style={styles.statCard}>
+          <Ionicons name="play-skip-forward-outline" size={22} color="rgba(255,255,255,0.45)" />
+          <Text style={styles.statValue}>{profileData?.stats.questionsSkipped ?? 0}</Text>
+          <Text style={styles.statLabel}>Questions Skipped</Text>
+        </Card>
+      </View>
       {!isLoading && !loadError && profileData?.stats.completedSessions === 0 ? (
         <Text style={styles.emptyStats}>Complete a puzzle with a partner to build your stats.</Text>
       ) : null}
@@ -231,6 +320,25 @@ const styles = StyleSheet.create({
   statRow: {
     flexDirection: 'row',
     gap: 12,
+  },
+  soloStatGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  soloStatCard: {
+    flexGrow: 1,
+    flexBasis: 180,
+    alignItems: 'center',
+    gap: 4,
+  },
+  soloListHeading: {
+    color: colors.white,
+    fontFamily: typography.subheading,
+    fontSize: 14,
+  },
+  soloList: {
+    gap: 8,
   },
   statCard: {
     flex: 1,

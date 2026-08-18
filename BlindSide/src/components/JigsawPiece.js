@@ -25,6 +25,7 @@ export default function JigsawPiece({
   boardHeight,
   origin,
   target,
+  trayScale,
   snapTolerance,
   onDragStart,
   onSettle,
@@ -76,15 +77,22 @@ export default function JigsawPiece({
       });
     });
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    zIndex: isDragging.value ? 20 : 5,
-    elevation: isDragging.value ? 20 : 5,
-    transform: [
-      { translateX: translateX.value - piece.padding },
-      { translateY: translateY.value - piece.padding },
-      { scale: isDragging.value ? 1.04 : 1 },
-    ],
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    const scale = isDragging.value ? 1.04 : trayScale;
+
+    // Compensate for center-based scaling so the logical cell origin stays fixed.
+    return {
+      left: translateX.value
+        - (piece.padding * scale)
+        - ((piece.renderWidth * (1 - scale)) / 2),
+      top: translateY.value
+        - (piece.padding * scale)
+        - ((piece.renderHeight * (1 - scale)) / 2),
+      zIndex: isDragging.value ? 20 : 5,
+      elevation: isDragging.value ? 20 : 5,
+      transform: [{ scale }],
+    };
+  });
 
   return (
     <GestureDetector gesture={gesture}>
@@ -107,7 +115,7 @@ export default function JigsawPiece({
             y={piece.padding - piece.targetY}
             width={boardWidth}
             height={boardHeight}
-            preserveAspectRatio="none"
+            preserveAspectRatio="xMidYMid slice"
             clipPath={`url(#${clipId})`}
           />
           <Path

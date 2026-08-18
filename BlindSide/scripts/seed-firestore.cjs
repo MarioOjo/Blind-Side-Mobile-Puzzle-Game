@@ -36,13 +36,15 @@ function getFirebaseRcProject() {
 }
 
 function validateManifest() {
-  if (puzzleImages.length !== 3 || questions.length !== 15) {
-    throw new Error('Expected 3 puzzle images and 15 questions.');
+  if (puzzleImages.length !== 6 || questions.length !== 15) {
+    throw new Error('Expected 6 puzzle images and 15 questions.');
   }
 
   const imageIds = new Set();
   const categories = new Set();
   const difficulties = new Set();
+  const allowedCategories = new Set(['characters', 'people', 'places', 'textures']);
+  const allowedDifficulties = new Set(['easy', 'medium', 'hard']);
   for (const image of puzzleImages) {
     const keys = Object.keys(image).sort();
     const expectedKeys = ['category', 'difficultyRecommended', 'imageId', 'imageName', 'imageURL'];
@@ -50,6 +52,12 @@ function validateManifest() {
       throw new Error(`Puzzle ${image.imageId ?? '<unknown>'} has an invalid shape.`);
     }
     if (imageIds.has(image.imageId)) throw new Error(`Duplicate puzzle ID: ${image.imageId}`);
+    if (!allowedCategories.has(image.category)) {
+      throw new Error(`Puzzle ${image.imageId} has an unsupported category.`);
+    }
+    if (!allowedDifficulties.has(image.difficultyRecommended)) {
+      throw new Error(`Puzzle ${image.imageId} has an unsupported difficulty.`);
+    }
     const imageUrl = new URL(image.imageURL);
     if (imageUrl.protocol !== 'https:' || imageUrl.hostname !== 'images.unsplash.com') {
       throw new Error(`Puzzle ${image.imageId} must use a direct Unsplash HTTPS URL.`);
@@ -59,11 +67,11 @@ function validateManifest() {
     difficulties.add(image.difficultyRecommended);
   }
 
-  if (JSON.stringify([...categories].sort()) !== JSON.stringify(['characters', 'people', 'places'])) {
-    throw new Error('Puzzle categories must contain people, places, and characters exactly once.');
+  if (JSON.stringify([...categories].sort()) !== JSON.stringify([...allowedCategories].sort())) {
+    throw new Error('Puzzle images must cover every supported category.');
   }
-  if (JSON.stringify([...difficulties].sort()) !== JSON.stringify(['easy', 'hard', 'medium'])) {
-    throw new Error('Puzzle difficulties must contain easy, medium, and hard exactly once.');
+  if (JSON.stringify([...difficulties].sort()) !== JSON.stringify([...allowedDifficulties].sort())) {
+    throw new Error('Puzzle images must cover every supported difficulty.');
   }
 
   const questionIds = new Set();

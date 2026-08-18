@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
+  browserLocalPersistence,
   connectAuthEmulator,
   getAuth,
   getReactNativePersistence,
@@ -26,7 +27,10 @@ let auth;
 
 try {
   auth = initializeAuth(firebaseApp, {
-    persistence: getReactNativePersistence(AsyncStorage),
+    // Web uses the browser SDK's persistence; native retains AsyncStorage-backed sessions.
+    persistence: Platform.OS === 'web'
+      ? browserLocalPersistence
+      : getReactNativePersistence(AsyncStorage),
   });
 } catch (error) {
   if (error.code !== 'auth/already-initialized') {

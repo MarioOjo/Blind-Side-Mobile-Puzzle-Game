@@ -70,11 +70,32 @@ function sessionDocument(overrides = {}) {
     mode: 'solo',
     userId: 'alice-id',
     puzzleId: 'puzzle-1',
+    difficulty: 'easy',
+    category: 'places',
     status: 'inProgress',
     completionTime: null,
     completedAt: null,
     movesTaken: 0,
     createdAt: Timestamp.now(),
+    ...overrides,
+  };
+}
+
+function cooperativeSessionDocument(overrides = {}) {
+  return {
+    mode: 'cooperative',
+    partnerIds: ['alice-id', 'bob-id'],
+    puzzleId: 'puzzle-1',
+    tier: 'friendship',
+    status: 'inProgress',
+    completionTime: null,
+    completedAt: null,
+    movesTaken: 0,
+    createdAt: Timestamp.now(),
+    turnCount: 0,
+    piecesPlacedTogether: 0,
+    questionsAnswered: 0,
+    questionsSkipped: 0,
     ...overrides,
   };
 }
@@ -133,13 +154,7 @@ test('only session participants can create and read sessions', async () => {
   await assertSucceeds(setDoc(doc(aliceDb, 'sessions/solo'), sessionDocument()));
   await assertFails(getDoc(doc(strangerDb, 'sessions/solo')));
 
-  const cooperative = sessionDocument({
-    mode: 'cooperative',
-    partnerIds: ['alice-id', 'bob-id'],
-    piecesPlacedTogether: 0,
-    questionsAnswered: 0,
-  });
-  delete cooperative.userId;
+  const cooperative = cooperativeSessionDocument();
   await assertSucceeds(setDoc(doc(bobDb, 'sessions/cooperative'), cooperative));
   await assertSucceeds(getDoc(doc(aliceDb, 'sessions/cooperative')));
   await assertFails(getDoc(doc(strangerDb, 'sessions/cooperative')));
@@ -149,15 +164,11 @@ test('participants can query cooperative sessions newest first', async () => {
   await testEnvironment.withSecurityRulesDisabled(async (context) => {
     const adminDb = context.firestore();
     for (const [id, createdAt] of [['older', 1000], ['newer', 2000]]) {
-      const cooperative = sessionDocument({
-        mode: 'cooperative',
-        partnerIds: ['alice-id', 'bob-id'],
+      await setDoc(doc(adminDb, `sessions/${id}`), cooperativeSessionDocument({
         piecesPlacedTogether: 4,
         questionsAnswered: 1,
         createdAt: Timestamp.fromMillis(createdAt),
-      });
-      delete cooperative.userId;
-      await setDoc(doc(adminDb, `sessions/${id}`), cooperative);
+      }));
     }
   });
 
@@ -202,7 +213,11 @@ test('puzzle images and questions are authenticated read-only content', async ()
 
   const aliceDb = testEnvironment.authenticatedContext('alice-id').firestore();
   await assertSucceeds(getDoc(doc(aliceDb, 'puzzleImages/puzzle-1')));
+  const puzzleCatalog = await assertSucceeds(getDocs(collection(aliceDb, 'puzzleImages')));
+  assert.deepEqual(puzzleCatalog.docs.map((puzzle) => puzzle.id), ['puzzle-1']);
   await assertSucceeds(getDoc(doc(aliceDb, 'questions/question-1')));
+  const publicDb = testEnvironment.unauthenticatedContext().firestore();
+  await assertFails(getDocs(collection(publicDb, 'puzzleImages')));
   await assertFails(setDoc(doc(aliceDb, 'questions/question-2'), {
     questionId: 'question-2', tier: 'lover', text: 'A question',
   }));
@@ -241,4 +256,141 @@ test('partner service rejects self and missing-user connections', async () => {
   firebaseConfigMock.db = testEnvironment.authenticatedContext('alice-id').firestore();
   await assert.rejects(addPartner('alice-id', 'alice-id'), { code: 'partner/cannot-add-self' });
   await assert.rejects(addPartner('alice-id', 'missing-id'), { code: 'partner/user-not-found' });
+});
+
+test('solo completions require scoped metadata and expose only the owner personal best', async () => {
+  const aliceDb = testEnvironment.authenticatedContext('alice-id').firestore();
+  const bobDb = testEnvironment.authenticatedContext('bob-id').firestore();
+
+  await assertSucceeds(setDoc(
+    doc(aliceDb, 'sessions/alice-slower'),
+    sessionDocument({
+      status: 'completed',
+      completionTime: 42000,
+      completedAt: Timestamp.now(),
+    }),
+  ));
+  await assertSucceeds(setDoc(
+    doc(aliceDb, 'sessions/alice-faster'),
+    sessionDocument({
+      status: 'completed',
+      completionTime: 39000,
+      completedAt: Timestamp.now(),
+    }),
+  ));
+  await assertFails(setDoc(doc(aliceDb, 'sessions/missing-metadata'), {
+    ...sessionDocument(),
+    difficulty: null,
+  }));
+  await assertFails(getDoc(doc(bobDb, 'sessions/alice-faster')));
+
+  const personalBestQuery = query(
+    collection(aliceDb, 'sessions'),
+    where('mode', '==', 'solo'),
+    where('userId', '==', 'alice-id'),
+    where('puzzleId', '==', 'puzzle-1'),
+    where('status', '==', 'completed'),
+    orderBy('completionTime', 'asc'),
+  );
+  const personalBest = await assertSucceeds(getDocs(personalBestQuery));
+  assert.equal(personalBest.docs[0].id, 'alice-faster');
+});
+
+test('cooperative session checkpoint and completion updates are accepted for participants and rejected for strangers', async () => {
+  const aliceDb = testEnvironment.authenticatedContext('alice-id').firestore();
+  const strangerDb = testEnvironment.authenticatedContext('stranger-id').firestore();
+
+  // Seed a valid cooperative session bypassing rules.
+  await testEnvironment.withSecurityRulesDisabled(async (context) => {
+    const adminDb = context.firestore();
+    await setDoc(doc(adminDb, 'sessions/coop-active'), cooperativeSessionDocument());
+  });
+
+  const checkpoint = cooperativeSessionDocument({ piecesPlacedTogether: 6, questionsAnswered: 2, questionsSkipped: 1, turnCount: 6 });
+  // A participant can update the session.
+  await assertSucceeds(setDoc(doc(aliceDb, 'sessions/coop-active'), checkpoint));
+
+  const completion = cooperativeSessionDocument({
+    piecesPlacedTogether: 48,
+    questionsAnswered: 14,
+    questionsSkipped: 2,
+    turnCount: 48,
+    status: 'completed',
+    completionTime: 185000,
+    completedAt: Timestamp.now(),
+  });
+  await assertSucceeds(setDoc(doc(aliceDb, 'sessions/coop-active'), completion));
+
+  // A stranger cannot update a session they are not part of.
+  await assertFails(setDoc(doc(strangerDb, 'sessions/coop-active'), completion));
+});
+
+test('questions collection is readable by authenticated users and write-protected', async () => {
+  await testEnvironment.withSecurityRulesDisabled(async (context) => {
+    const adminDb = context.firestore();
+    await setDoc(doc(adminDb, 'questions/q-friendship-1'), {
+      questionId: 'q-friendship-1',
+      tier: 'friendship',
+      text: 'What made you laugh recently?',
+    });
+    await setDoc(doc(adminDb, 'questions/q-acquaintance-1'), {
+      questionId: 'q-acquaintance-1',
+      tier: 'acquaintance',
+      text: 'What do you do for work?',
+    });
+  });
+
+  const aliceDb = testEnvironment.authenticatedContext('alice-id').firestore();
+  const publicDb = testEnvironment.unauthenticatedContext().firestore();
+
+  // Authenticated user can read individual questions and query by tier.
+  await assertSucceeds(getDoc(doc(aliceDb, 'questions/q-friendship-1')));
+  const tierQuery = query(
+    collection(aliceDb, 'questions'),
+    where('tier', '==', 'friendship'),
+  );
+  const snapshot = await assertSucceeds(getDocs(tierQuery));
+  assert.equal(snapshot.docs.length, 1);
+  assert.equal(snapshot.docs[0].id, 'q-friendship-1');
+
+  // Unauthenticated client cannot read questions.
+  await assertFails(getDoc(doc(publicDb, 'questions/q-friendship-1')));
+
+  // No client can write questions through the SDK.
+  await assertFails(setDoc(doc(aliceDb, 'questions/q-new'), {
+    questionId: 'q-new', tier: 'lover', text: 'A new question',
+  }));
+});
+
+test('completed solo history query is owner-scoped and excludes unfinished runs', async () => {
+  await testEnvironment.withSecurityRulesDisabled(async (context) => {
+    const adminDb = context.firestore();
+    await Promise.all([
+      setDoc(doc(adminDb, 'sessions/alice-complete'), sessionDocument({
+        status: 'completed', completionTime: 35000, completedAt: Timestamp.now(),
+      })),
+      setDoc(doc(adminDb, 'sessions/alice-progress'), sessionDocument({ status: 'inProgress' })),
+      setDoc(doc(adminDb, 'sessions/bob-complete'), sessionDocument({
+        userId: 'bob-id', status: 'completed', completionTime: 20000, completedAt: Timestamp.now(),
+      })),
+    ]);
+  });
+
+  const aliceDb = testEnvironment.authenticatedContext('alice-id').firestore();
+  const historyQuery = query(
+    collection(aliceDb, 'sessions'),
+    where('mode', '==', 'solo'),
+    where('userId', '==', 'alice-id'),
+    where('status', '==', 'completed'),
+  );
+  const history = await assertSucceeds(getDocs(historyQuery));
+  assert.deepEqual(history.docs.map(({ id }) => id), ['alice-complete']);
+
+  const bobHistoryQuery = query(
+    collection(aliceDb, 'sessions'),
+    where('mode', '==', 'solo'),
+    where('userId', '==', 'bob-id'),
+    where('status', '==', 'completed'),
+  );
+  await assertFails(getDocs(bobHistoryQuery));
 });

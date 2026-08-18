@@ -5,7 +5,7 @@ const DIFFICULTY_LAYOUTS = {
   hard: { columns: 5, rows: 4, pieceCount: 20 },
 };
 const COOPERATIVE_DIFFICULTY_LAYOUTS = {
-  hard: { columns: 3, rows: 2, pieceCount: 6 }, // TEMP: reduced for completion-write testing — revert to { columns: 8, rows: 6, pieceCount: 48 }
+  hard: { columns: 8, rows: 6, pieceCount: 48 },
 };
 
 const TAB_DEPTH_RATIO = 0.2;

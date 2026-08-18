@@ -50,7 +50,6 @@ function isLandscapeOrientation(orientation) {
 export default function PuzzleScreen({ navigation, route }) {
   const puzzleId = route.params?.puzzleId;
   const isCooperative = isValidCooperativeContext(route.params);
-  console.log('[COOP-DEBUG] 0. PuzzleScreen mounted/updated — isCooperative:', isCooperative, 'route.params:', JSON.stringify(route.params));
 
   // ── orientation ──
   const [orientation, setOrientation] = useState(null);
@@ -117,7 +116,6 @@ export default function PuzzleScreen({ navigation, route }) {
       const uid = auth.currentUser?.uid;
       const partnerId = route.params?.partnerId;
       const tier = route.params?.tier;
-      console.log('[COOP-DEBUG] 1. createCooperativeSession called — uid:', uid, 'partnerId:', partnerId, 'tier:', tier, 'puzzleId:', puzzleId);
       if (uid && partnerId && tier) {
         cooperativeSessionCreatePromise.current = createCooperativeSession({
           partnerIds: [uid, partnerId],
@@ -130,17 +128,8 @@ export default function PuzzleScreen({ navigation, route }) {
           questionsSkipped: 0,
           turnCount: 0,
         })
-          .then((id) => {
-            cooperativeSessionId.current = id;
-            console.log('[COOP-DEBUG] 2. createCooperativeSession resolved — sessionId:', id);
-            return id;
-          })
-          .catch((err) => {
-            console.error('[COOP-DEBUG] 2. createCooperativeSession FAILED:', err?.message ?? err, err?.code);
-            return null;
-          });
-      } else {
-        console.warn('[COOP-DEBUG] 1. createCooperativeSession SKIPPED — missing uid/partnerId/tier');
+          .then((id) => { cooperativeSessionId.current = id; return id; })
+          .catch(() => null);
       }
     }
 
@@ -199,39 +188,26 @@ export default function PuzzleScreen({ navigation, route }) {
         ? normalizeElapsedTime(Date.now() - startedAt.current)
         : 0;
 
-      console.log('[COOP-DEBUG] 3. handlePuzzleComplete — isCooperative:', isCooperative);
-      console.log('[COOP-DEBUG] 3. cooperativeSessionId.current:', cooperativeSessionId.current);
-      console.log('[COOP-DEBUG] 3. cooperativeSessionCreatePromise.current:', cooperativeSessionCreatePromise.current !== null ? 'exists' : 'null');
-      console.log('[COOP-DEBUG] 3. turnState:', JSON.stringify(turnState));
-      console.log('[COOP-DEBUG] 3. elapsed:', elapsed, 'totalPiecesRef:', totalPiecesRef.current, 'placedCountRef:', placedCountRef.current);
-
       // Ensure the session document exists before writing completion.
       // If the create promise is still in-flight, await it now.
       if (cooperativeSessionCreatePromise.current && !cooperativeSessionId.current) {
-        console.log('[COOP-DEBUG] 3a. sessionId not yet resolved — awaiting create promise...');
         await cooperativeSessionCreatePromise.current;
-        console.log('[COOP-DEBUG] 3a. create promise settled — sessionId now:', cooperativeSessionId.current);
       }
 
       if (cooperativeSessionId.current) {
-        const completionPatch = {
-          status: 'completed',
-          completionTime: elapsed,
-          completedAt: new Date(),
-          piecesPlacedTogether: totalPiecesRef.current ?? placedCountRef.current,
-          turnCount: turnState?.turnCount ?? 0,
-          questionsAnswered: turnState?.questionsAnswered ?? 0,
-          questionsSkipped: turnState?.questionsSkipped ?? 0,
-        };
-        console.log('[COOP-DEBUG] 4. calling updateCooperativeSession — id:', cooperativeSessionId.current, 'patch:', JSON.stringify(completionPatch));
         try {
-          await updateCooperativeSession(cooperativeSessionId.current, completionPatch);
-          console.log('[COOP-DEBUG] 5. updateCooperativeSession SUCCESS');
+          await updateCooperativeSession(cooperativeSessionId.current, {
+            status: 'completed',
+            completionTime: elapsed,
+            completedAt: new Date(),
+            piecesPlacedTogether: totalPiecesRef.current ?? placedCountRef.current,
+            turnCount: turnState?.turnCount ?? 0,
+            questionsAnswered: turnState?.questionsAnswered ?? 0,
+            questionsSkipped: turnState?.questionsSkipped ?? 0,
+          });
         } catch (writeError) {
-          console.error('[COOP-DEBUG] 5. updateCooperativeSession FAILED — message:', writeError?.message, 'code:', writeError?.code, 'full:', writeError);
+          console.error('Cooperative completion write failed:', writeError?.message ?? writeError);
         }
-      } else {
-        console.warn('[COOP-DEBUG] 4. SKIPPED updateCooperativeSession — cooperativeSessionId.current is still null/undefined');
       }
 
       navigation.replace('CooperativeCompletion', {

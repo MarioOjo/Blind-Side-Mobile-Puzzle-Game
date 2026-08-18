@@ -74,6 +74,10 @@ export default function HomeDashboardScreen({ navigation }) {
     return () => { isActive = false; };
   }, []));
 
+  // Show at most 2 partners in the compact card, scroll if more
+  const visiblePartners = dashboard?.partners?.slice(0, 2) ?? [];
+  const hasMorePartners = (dashboard?.partners?.length ?? 0) > 2;
+
   return (
     <ScrollView
       style={styles.container}
@@ -85,83 +89,90 @@ export default function HomeDashboardScreen({ navigation }) {
         <Text style={styles.usernameText}>{dashboard?.profile.username ?? 'Puzzle Partner'}</Text>
       </View>
 
-      {/* ── PLAY SOLO ─────────────────────────────────────────── */}
-      <Text style={styles.sectionLabel}>PLAY SOLO</Text>
-      <Card style={[styles.modeCard, styles.soloCard, shadows.glowGold]}>
-        <View style={styles.modeCardHeader}>
-          <Ionicons name="person-outline" size={24} color={colors.victoryGold} />
-          <View style={styles.modeCardText}>
-            <Text style={styles.modeCardTitle}>Solo Puzzle</Text>
-            <Text style={styles.modeCardSubtitle}>Play at your own pace</Text>
-          </View>
-        </View>
-        <Pressable
-          style={({ pressed }) => [
-            styles.modeCardButton,
-            styles.soloButton,
-            pressed && styles.modeCardButtonPressed,
-          ]}
-          onPress={() => navigation.navigate('DifficultySelection')}
-        >
-          <Text style={[styles.modeCardButtonText, styles.soloButtonText]}>Start Solo Puzzle</Text>
-          <Ionicons name="arrow-forward" size={16} color={colors.victoryGold} />
-        </Pressable>
-      </Card>
-
-      {/* ── PLAY TOGETHER ──────────────────────────────────────── */}
-      <Text style={styles.sectionLabel}>PLAY TOGETHER</Text>
-      <Card style={[styles.modeCard, styles.coopCard, shadows.glowCyan]}>
-        <View style={styles.modeCardHeader}>
-          <Ionicons name="people-outline" size={24} color={colors.neonCyan} />
-          <View style={styles.modeCardText}>
-            <Text style={styles.modeCardTitle}>Cooperative Puzzle</Text>
-            <Text style={styles.modeCardSubtitle}>Play with a partner</Text>
-          </View>
+      {/* ── MODE CARDS: Side by side ───────────────────────────── */}
+      <View style={styles.modeCardsRow}>
+        {/* Play Solo */}
+        <View style={styles.modeCardColumn}>
+          <Card style={[styles.modeCard, styles.soloCard, shadows.glowGold]}>
+            <View style={styles.modeCardHeader}>
+              <Ionicons name="person-outline" size={20} color={colors.victoryGold} />
+              <View style={styles.modeCardText}>
+                <Text style={styles.modeCardTitle}>Solo</Text>
+                <Text style={styles.modeCardSubtitle}>Your pace</Text>
+              </View>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.modeCardButton,
+                styles.soloButton,
+                pressed && styles.modeCardButtonPressed,
+              ]}
+              onPress={() => navigation.navigate('DifficultySelection')}
+            >
+              <Text style={[styles.modeCardButtonText, styles.soloButtonText]}>Start</Text>
+              <Ionicons name="arrow-forward" size={14} color={colors.victoryGold} />
+            </Pressable>
+          </Card>
         </View>
 
-        {isLoading ? (
-          <Text style={styles.stateText}>Loading partners...</Text>
-        ) : loadError ? (
-          <Text style={styles.errorText}>{loadError}</Text>
-        ) : dashboard?.partners.length === 0 ? (
-          <Text style={styles.stateText}>Add a partner to play together.</Text>
-        ) : (
-          <View style={styles.partnerList}>
-            {dashboard.partners.map((partner, index) => (
-              <Fragment key={partner.uid}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Play with ${partner.username}`}
-                  onPress={() => navigation.push('CooperativeTierSelection', {
-                    partnerId: partner.uid,
-                    partnerName: partner.username,
-                  })}
-                  style={({ pressed }) => [styles.partnerRow, pressed && styles.partnerRowPressed]}
-                >
-                  <View style={styles.partnerAvatar}>
-                    <Text style={styles.partnerAvatarText}>{partner.username.charAt(0).toUpperCase()}</Text>
-                  </View>
-                  <Text style={styles.partnerName}>{partner.username}</Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.neonCyan} />
-                </Pressable>
-                {index < dashboard.partners.length - 1 && <View style={styles.divider} />}
-              </Fragment>
-            ))}
-          </View>
-        )}
+        {/* Play Together */}
+        <View style={styles.modeCardColumn}>
+          <Card style={[styles.modeCard, styles.coopCard, shadows.glowCyan]}>
+            <View style={styles.modeCardHeader}>
+              <Ionicons name="people-outline" size={20} color={colors.neonCyan} />
+              <View style={styles.modeCardText}>
+                <Text style={styles.modeCardTitle}>Together</Text>
+                <Text style={styles.modeCardSubtitle}>With partner</Text>
+              </View>
+            </View>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.modeCardButton,
-            styles.coopButton,
-            pressed && styles.modeCardButtonPressed,
-          ]}
-          onPress={() => navigation.navigate('PartnerConnection')}
-        >
-          <Text style={[styles.modeCardButtonText, styles.coopButtonText]}>Add Partner</Text>
-          <Ionicons name="arrow-forward" size={16} color={colors.neonCyan} />
-        </Pressable>
-      </Card>
+            {isLoading ? (
+              <Text style={styles.stateText}>Loading...</Text>
+            ) : loadError ? (
+              <Text style={styles.errorText}>{loadError}</Text>
+            ) : dashboard?.partners.length === 0 ? (
+              <Text style={styles.stateText}>Add a partner</Text>
+            ) : (
+              <View style={styles.partnerList}>
+                {visiblePartners.map((partner, index) => (
+                  <Fragment key={partner.uid}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Play with ${partner.username}`}
+                      onPress={() => navigation.push('CooperativeTierSelection', {
+                        partnerId: partner.uid,
+                        partnerName: partner.username,
+                      })}
+                      style={({ pressed }) => [styles.partnerRow, pressed && styles.partnerRowPressed]}
+                    >
+                      <View style={styles.partnerAvatar}>
+                        <Text style={styles.partnerAvatarText}>{partner.username.charAt(0).toUpperCase()}</Text>
+                      </View>
+                      <Text style={styles.partnerName} numberOfLines={1}>{partner.username}</Text>
+                    </Pressable>
+                    {index < visiblePartners.length - 1 && <View style={styles.divider} />}
+                  </Fragment>
+                ))}
+                {hasMorePartners && (
+                  <Text style={styles.morePartnersText}>+{dashboard.partners.length - 2} more</Text>
+                )}
+              </View>
+            )}
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.modeCardButton,
+                styles.coopButton,
+                pressed && styles.modeCardButtonPressed,
+              ]}
+              onPress={() => navigation.navigate('PartnerConnection')}
+            >
+              <Text style={[styles.modeCardButtonText, styles.coopButtonText]}>Add</Text>
+              <Ionicons name="arrow-forward" size={14} color={colors.neonCyan} />
+            </Pressable>
+          </Card>
+        </View>
+      </View>
 
       {/* ── RECENT ACTIVITY ────────────────────────────────────── */}
       <View style={styles.sectionHeader}>
@@ -222,13 +233,6 @@ const styles = StyleSheet.create({
     fontFamily: typography.heading,
     fontSize: 26,
   },
-  sectionLabel: {
-    color: 'rgba(255,255,255,0.45)',
-    fontFamily: typography.body,
-    fontSize: 11,
-    letterSpacing: 1.2,
-    marginTop: 4,
-  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -245,8 +249,18 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
     fontSize: 12,
   },
+  // Mode cards row: side by side
+  modeCardsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modeCardColumn: {
+    flex: 1,
+    minWidth: 0,
+  },
   modeCard: {
-    padding: 16,
+    padding: 10,
+    borderRadius: 12,
   },
   soloCard: {
     borderColor: colors.victoryGold,
@@ -257,8 +271,8 @@ const styles = StyleSheet.create({
   modeCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 8,
   },
   modeCardText: {
     flex: 1,
@@ -266,21 +280,21 @@ const styles = StyleSheet.create({
   modeCardTitle: {
     color: colors.white,
     fontFamily: typography.subheading,
-    fontSize: 17,
+    fontSize: 14,
   },
   modeCardSubtitle: {
     color: 'rgba(255,255,255,0.45)',
     fontFamily: typography.body,
-    fontSize: 13,
+    fontSize: 11,
     marginTop: 1,
   },
   modeCardButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
     marginTop: 4,
   },
@@ -295,7 +309,7 @@ const styles = StyleSheet.create({
   },
   modeCardButtonText: {
     fontFamily: typography.body,
-    fontSize: 14,
+    fontSize: 12,
   },
   soloButtonText: {
     color: colors.victoryGold,
@@ -304,13 +318,13 @@ const styles = StyleSheet.create({
     color: colors.neonCyan,
   },
   partnerList: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   partnerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
+    gap: 8,
+    paddingVertical: 6,
     paddingHorizontal: 4,
     borderRadius: 6,
   },
@@ -318,9 +332,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(6,182,212,0.08)',
   },
   partnerAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: colors.electricBlue,
     alignItems: 'center',
     justifyContent: 'center',
@@ -328,13 +342,20 @@ const styles = StyleSheet.create({
   partnerAvatarText: {
     color: colors.white,
     fontFamily: typography.subheading,
-    fontSize: 14,
+    fontSize: 12,
   },
   partnerName: {
     flex: 1,
     color: colors.white,
     fontFamily: typography.subheading,
-    fontSize: 15,
+    fontSize: 13,
+  },
+  morePartnersText: {
+    color: 'rgba(255,255,255,0.35)',
+    fontFamily: typography.body,
+    fontSize: 11,
+    marginTop: 4,
+    textAlign: 'center',
   },
   activityCard: {
     backgroundColor: colors.card,
@@ -342,14 +363,14 @@ const styles = StyleSheet.create({
   stateText: {
     color: 'rgba(255,255,255,0.6)',
     fontFamily: typography.body,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 11,
+    lineHeight: 16,
   },
   errorText: {
     color: '#FCA5A5',
     fontFamily: typography.body,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 11,
+    lineHeight: 16,
   },
   divider: {
     height: 1,

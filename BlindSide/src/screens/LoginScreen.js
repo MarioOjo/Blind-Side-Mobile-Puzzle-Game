@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Alert,
+  Keyboard,
   ScrollView,
   View,
   Text,
@@ -25,11 +26,12 @@ export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [focusedField, setFocusedField] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [resetMessage, setResetMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
+  const emailInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -69,6 +71,10 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleForgotPassword = () => {
+    emailInputRef.current?.blur();
+    passwordInputRef.current?.blur();
+    Keyboard.dismiss();
+
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
       setResetMessage('');
@@ -105,10 +111,15 @@ export default function LoginScreen({ navigation }) {
       {/* The card groups the form and alternate sign-in actions into one surface. */}
       <Card style={styles.card}>
         <Text style={styles.heading}>Log In</Text>
-        {/* Firebase email/password authentication requires an email address. */}
-        <View style={[styles.inputRow, focusedField === 'email' && styles.inputRowFocused]}>
+        {/* Firebase email/password authentication requires an email address.
+            No onFocus/onBlur here: driving a setState from a TextInput's own
+            focus event (even one that only touches borderColor) reliably broke
+            Android's IME connection on this stack, so the input rows use a
+            static border instead of a focus-glow effect. */}
+        <View style={styles.inputRow}>
           <Ionicons name="person-outline" size={18} color={colors.neonCyan} style={styles.inputIcon} />
           <TextInput
+            ref={emailInputRef}
             style={styles.input}
             placeholder="Email"
             placeholderTextColor={colors.white}
@@ -121,14 +132,13 @@ export default function LoginScreen({ navigation }) {
               setErrorMessage('');
               setResetMessage('');
             }}
-            onFocus={() => setFocusedField('email')}
-            onBlur={() => setFocusedField(null)}
           />
         </View>
         {/* Password field includes the reveal toggle for easier testing on mobile. */}
-        <View style={[styles.inputRow, focusedField === 'password' && styles.inputRowFocused]}>
+        <View style={styles.inputRow}>
           <Ionicons name="lock-closed-outline" size={18} color={colors.neonCyan} style={styles.inputIcon} />
           <TextInput
+            ref={passwordInputRef}
             style={styles.input}
             placeholder="Password"
             placeholderTextColor={colors.white}
@@ -138,8 +148,6 @@ export default function LoginScreen({ navigation }) {
               setPassword(value);
               setErrorMessage('');
             }}
-            onFocus={() => setFocusedField('password')}
-            onBlur={() => setFocusedField(null)}
           />
           <Pressable onPress={() => setShowPassword((prev) => !prev)}>
             <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="rgba(255,255,255,0.5)" style={styles.eyeIcon} />
@@ -241,15 +249,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: colors.card,
   },
-  inputRowFocused: {
-    // Focus state shifts the border and glow to the accent cyan. elevation is
-    // deliberately omitted here: toggling it on the TextInput's direct parent
-    // the instant the field gains focus was breaking Android's IME input
-    // connection (keyboard would open but keystrokes never registered).
-    borderColor: colors.neonCyan,
-    ...shadows.glowCyan,
-    elevation: 0,
-  },
   inputIcon: {
     marginRight: 8,
   },
@@ -307,4 +306,3 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
-

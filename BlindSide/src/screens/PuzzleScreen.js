@@ -19,11 +19,14 @@ import { auth } from '../services/FirebaseConfig';
 import {
   createCooperativeSession,
   createSoloCompletion,
+  createSoloSession,
   getCooperativeSession,
   getPuzzleImage,
   getQuestionsForTier,
   getSoloPersonalBest,
+  getSoloSession,
   updateCooperativeSession,
+  updateSoloSession,
 } from '../services/FirestoreService';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
@@ -94,6 +97,10 @@ export default function PuzzleScreen({ navigation, route }) {
     if (timerInterval.current) clearInterval(timerInterval.current);
     timerInterval.current = null;
   }, []);
+
+  // ── solo session (created on first interaction, checkpointed per placement) ──
+  const soloSessionId = useRef(null);
+  const soloSessionCreatePromise = useRef(null);
 
   // ── cooperative session ──
   const cooperativeSessionId = useRef(null);
@@ -168,15 +175,36 @@ export default function PuzzleScreen({ navigation, route }) {
     navigation.navigate('HomeDashboard');
   }, [navigation]);
 
-  // ── solo timer start (cooperative uses handleConfirmReceipt) ──
+  // ── solo timer start + session creation (cooperative uses handleConfirmReceipt) ──
   const handleFirstInteraction = useCallback(() => {
     if (isCooperative || startedAt.current !== null || completionHandled.current) return;
-    startedAt.current = Date.now();
-    setElapsedTime(0);
+    // Resumed sessions offset by however much time was already on the clock,
+    // so the total keeps counting up instead of restarting from zero.
+    startedAt.current = Date.now() - resumedElapsedRef.current;
+    setElapsedTime(resumedElapsedRef.current);
     timerInterval.current = setInterval(() => {
       setElapsedTime(Date.now() - startedAt.current);
     }, 250);
-  }, [isCooperative]);
+
+    // Create the Firestore session document on first interaction — but only
+    // for a brand-new session. A resumed session already has soloSessionId
+    // set (from the resume fetch below), so creating one here would fork a
+    // second document instead of continuing the existing one.
+    if (!soloSessionId.current) {
+      const uid = auth.currentUser?.uid;
+      if (uid && puzzle) {
+        soloSessionCreatePromise.current = createSoloSession({
+          userId: uid,
+          puzzleId,
+          difficulty: puzzle.difficultyRecommended,
+          category: puzzle.category,
+          movesTaken: 0,
+        })
+          .then((id) => { soloSessionId.current = id; return id; })
+          .catch(() => null);
+      }
+    }
+  }, [isCooperative, puzzle, puzzleId]);
 
   // ── cooperative: current player confirms they have the device, unlocking the board ──
   const handleConfirmReceipt = useCallback(() => {
@@ -266,6 +294,24 @@ export default function PuzzleScreen({ navigation, route }) {
     });
   }, [handleCoopCorrectPlacement, isCooperative, questions]);
 
+  // ── JigsawBoard onSettle callback (solo only) ──
+  const handleSoloSettle = useCallback((pieceId) => {
+    if (isCooperative || completionHandled.current) return;
+
+    placedPieceIdsRef.current.push(pieceId);
+
+    // Checkpoint Firestore (best-effort, fire-and-forget) — same pattern as
+    // the cooperative per-placement checkpoint, minus turn/question logic
+    // since solo has neither.
+    if (soloSessionId.current) {
+      const elapsed = startedAt.current !== null ? Date.now() - startedAt.current : 0;
+      updateSoloSession(soloSessionId.current, {
+        placedPieceIds: arrayUnion(pieceId),
+        completionTime: normalizeElapsedTime(elapsed),
+      }).catch(() => {});
+    }
+  }, [isCooperative]);
+
   // ── puzzle complete ──
   const handlePuzzleComplete = useCallback(async () => {
     if (completionHandled.current || !puzzle) return;
@@ -348,15 +394,36 @@ export default function PuzzleScreen({ navigation, route }) {
         bestUnavailable = true;
       }
 
+      // Ensure the in-progress session document exists before writing
+      // completion — if creation fired on first interaction and is still
+      // in-flight, await it now.
+      if (soloSessionCreatePromise.current && !soloSessionId.current) {
+        await soloSessionCreatePromise.current;
+      }
+
       try {
-        sessionId = await createSoloCompletion({
-          userId: uid,
-          puzzleId,
-          difficulty: puzzle.difficultyRecommended,
-          category: puzzle.category,
-          completionTime,
-          movesTaken: 0,
-        });
+        if (soloSessionId.current) {
+          // Update the same document the in-progress checkpoints wrote to,
+          // rather than creating a second one.
+          await updateSoloSession(soloSessionId.current, {
+            status: 'completed',
+            completionTime,
+            completedAt: new Date(),
+            placedPieceIds: placedPieceIdsRef.current,
+          });
+          sessionId = soloSessionId.current;
+        } else {
+          // No in-progress session was ever created (e.g. offline at first
+          // interaction) — fall back to writing the completion directly.
+          sessionId = await createSoloCompletion({
+            userId: uid,
+            puzzleId,
+            difficulty: puzzle.difficultyRecommended,
+            category: puzzle.category,
+            completionTime,
+            movesTaken: 0,
+          });
+        }
       } catch (error) {
         saveError = true;
       }
@@ -520,11 +587,55 @@ export default function PuzzleScreen({ navigation, route }) {
     return () => { cancelled = true; };
   }, [isCooperative, puzzleId, route.params, sessionIdParam]);
 
+  // ── solo setup: resume an existing in-progress solo session ──
+  useEffect(() => {
+    if (isCooperative) return undefined;
+
+    soloSessionId.current = null;
+    soloSessionCreatePromise.current = null;
+    placedCountRef.current = 0;
+    placedPieceIdsRef.current = [];
+    resumedElapsedRef.current = 0;
+    setInitialPlacedPieceIds(null);
+
+    if (!sessionIdParam) {
+      setIsResumeLoading(false);
+      return undefined;
+    }
+
+    // Resume path: load the existing session and pre-mark its placed pieces
+    // instead of starting the puzzle fresh — mirrors the cooperative resume
+    // path above. JigsawBoard doesn't render until isResumeLoading clears.
+    let cancelled = false;
+    setIsResumeLoading(true);
+
+    getSoloSession(sessionIdParam)
+      .then((session) => {
+        if (cancelled || !session) return;
+
+        soloSessionId.current = session.id;
+        const placedIds = Array.isArray(session.placedPieceIds) ? session.placedPieceIds : [];
+        placedPieceIdsRef.current = [...placedIds];
+        placedCountRef.current = placedIds.length;
+        resumedElapsedRef.current = session.completionTime ?? 0;
+        setInitialPlacedPieceIds(placedIds);
+        setElapsedTime(resumedElapsedRef.current);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsResumeLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [isCooperative, puzzleId, sessionIdParam]);
+
   // ── reset on puzzle change ──
   useEffect(() => {
     clearTimer();
     startedAt.current = null;
     completionHandled.current = false;
+    soloSessionId.current = null;
+    soloSessionCreatePromise.current = null;
     cooperativeSessionId.current = null;
     cooperativeSessionCreatePromise.current = null;
     placedCountRef.current = 0;
@@ -582,7 +693,7 @@ export default function PuzzleScreen({ navigation, route }) {
           disabled={boardDisabled}
           onFirstInteraction={isCooperative ? undefined : handleFirstInteraction}
           onComplete={handlePuzzleComplete}
-          onSettle={isCooperative ? handleCoopSettle : undefined}
+          onSettle={isCooperative ? handleCoopSettle : handleSoloSettle}
           onImageError={handleImageError}
           initialPlacedIds={initialPlacedPieceIds ?? undefined}
         />

@@ -23,6 +23,7 @@ import {
   getCompletedSoloSessions,
   getCooperativeSessions,
   getPuzzleImages,
+  getSoloSessions,
   getUserProfile,
   getUserProfiles,
 } from '../services/FirestoreService';
@@ -32,6 +33,7 @@ import {
   indexProfilesByUid,
   presentCooperativeSession,
 } from '../utils/cooperativeSessions';
+import { presentSoloSession } from '../utils/soloSessions';
 import { calculateSoloStats } from '../utils/soloStats';
 import { formatElapsedTime } from '../utils/soloRun';
 
@@ -58,9 +60,10 @@ export default function ProfileScreen({ navigation }) {
         const uid = auth.currentUser?.uid;
         if (!uid) throw new Error('No authenticated user.');
 
-        const [profile, sessions] = await Promise.all([
+        const [profile, sessions, soloSessions] = await Promise.all([
           getUserProfile(uid),
           getCooperativeSessions(uid),
+          getSoloSessions(uid),
         ]);
         if (!profile) throw new Error('User profile not found.');
 
@@ -68,13 +71,23 @@ export default function ProfileScreen({ navigation }) {
         const partnerProfiles = await getUserProfiles(sessionPartnerIds);
         const profilesByUid = indexProfilesByUid(partnerProfiles);
 
+        // Recent Activity merges both modes by actual recency (raw
+        // createdAt, before either gets formatted into a display string),
+        // then presents each row through its own mode-specific formatter.
+        // Cooperative Stats above stays driven by `sessions` alone — solo
+        // play doesn't count toward "Played With"/"Pieces Placed Together".
+        const recentSessions = [...sessions, ...soloSessions]
+          .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
+          .slice(0, 3)
+          .map((session) => (session.mode === 'solo'
+            ? presentSoloSession(session)
+            : presentCooperativeSession(session, uid, profilesByUid)));
+
         if (isActive) {
           setProfileData({
             profile,
             stats: calculateCooperativeStats(sessions, uid),
-            recentSessions: sessions.slice(0, 3).map((session) => (
-              presentCooperativeSession(session, uid, profilesByUid)
-            )),
+            recentSessions,
           });
         }
       } catch (error) {
@@ -130,6 +143,18 @@ export default function ProfileScreen({ navigation }) {
   // the sibling tab's nested screen rather than a same-stack push.
   const handleResumeSession = (session) => {
     if (session.status !== 'inProgress') return;
+
+    if (session.mode === 'solo') {
+      navigation.navigate('Home', {
+        screen: 'Puzzle',
+        params: {
+          sessionId: session.id,
+          puzzleId: session.puzzleId,
+        },
+      });
+      return;
+    }
+
     navigation.navigate('Home', {
       screen: 'Puzzle',
       params: {
@@ -247,13 +272,14 @@ export default function ProfileScreen({ navigation }) {
       <Text style={styles.subheading}>Recent Puzzles</Text>
       {isLoading ? <Text style={styles.stateText}>Loading recent puzzles...</Text> : null}
       {!isLoading && !loadError && profileData?.recentSessions.length === 0 ? (
-        <Text style={styles.stateText}>No cooperative puzzles yet.</Text>
+        <Text style={styles.stateText}>No puzzles yet.</Text>
       ) : null}
       {!isLoading && !loadError && profileData?.recentSessions.map((session) => (
         <Card key={session.id} style={styles.card}>
           <PuzzleSessionListItem
             partnerName={session.partnerName}
             status={session.status}
+            statusLabelOverride={session.mode === 'solo' ? session.statusLabel : undefined}
             lastPlayed={session.lastPlayed}
             showProgress={false}
             onPress={session.status === 'inProgress' ? () => handleResumeSession(session) : undefined}

@@ -38,11 +38,11 @@ service cloud.firestore {
     function validSoloSession(data) {
       return data.keys().hasAll([
           'mode', 'userId', 'puzzleId', 'difficulty', 'category', 'status',
-          'completionTime', 'completedAt', 'movesTaken', 'createdAt'
+          'completionTime', 'completedAt', 'movesTaken', 'createdAt', 'placedPieceIds'
         ])
         && data.keys().hasOnly([
           'mode', 'userId', 'puzzleId', 'difficulty', 'category', 'status',
-          'completionTime', 'completedAt', 'movesTaken', 'createdAt'
+          'completionTime', 'completedAt', 'movesTaken', 'createdAt', 'placedPieceIds'
         ])
         && data.mode == 'solo'
         && data.userId is string
@@ -50,6 +50,7 @@ service cloud.firestore {
         && data.difficulty.size() > 0
         && data.category is string
         && data.category.size() > 0
+        && data.placedPieceIds is list
         && validCommonSession(data);
     }
 

@@ -29,6 +29,7 @@ const {
   indexProfilesByUid,
   presentCooperativeSession,
 } = loadAppModule('src/utils/cooperativeSessions.js');
+const { presentSoloSession } = loadAppModule('src/utils/soloSessions.js');
 
 test('session builder produces distinct solo and cooperative ownership shapes', () => {
   const solo = buildSessionDocument({
@@ -42,6 +43,7 @@ test('session builder produces distinct solo and cooperative ownership shapes', 
   assert.equal(solo.userId, 'alice-id');
   assert.equal(solo.difficulty, 'easy');
   assert.equal(solo.category, 'places');
+  assert.deepEqual(solo.placedPieceIds, []);
   assert.equal('partnerIds' in solo, false);
 
   const cooperative = buildSessionDocument({
@@ -167,6 +169,37 @@ test('cooperative session presentation uses partner profiles and placed-piece pr
     lastPlayed: '1h ago',
   });
   assert.equal(formatRelativeTime(null), 'Recently');
+});
+
+test('solo session presentation labels by mode and shows placed-piece progress', () => {
+  const inProgress = presentSoloSession({
+    id: 'solo-session-1',
+    puzzleId: 'puzzle-1',
+    status: 'inProgress',
+    placedPieceIds: ['piece-0-0', 'piece-0-1'],
+    createdAt: { toDate: () => new Date(1000) },
+  }, 3601000);
+
+  assert.deepEqual(inProgress, {
+    id: 'solo-session-1',
+    mode: 'solo',
+    puzzleId: 'puzzle-1',
+    partnerName: 'Solo',
+    status: 'inProgress',
+    statusLabel: 'In progress',
+    progressLabel: '2 pieces placed',
+    lastPlayed: '1h ago',
+  });
+
+  const completed = presentSoloSession({
+    id: 'solo-session-2',
+    puzzleId: 'puzzle-1',
+    status: 'completed',
+    placedPieceIds: ['piece-0-0'],
+    createdAt: null,
+  });
+  assert.equal(completed.statusLabel, 'Completed');
+  assert.equal(completed.progressLabel, 'Complete');
 });
 
 test('cooperative statistics use completed sessions and distinct actual partners', () => {

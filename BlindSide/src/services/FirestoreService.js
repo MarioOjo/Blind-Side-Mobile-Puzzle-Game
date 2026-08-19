@@ -83,6 +83,38 @@ export async function createSoloCompletion(input) {
   return reference.id;
 }
 
+export async function createSoloSession(input) {
+  const reference = await addDoc(
+    collection(db, COLLECTIONS.sessions),
+    buildSessionDocument({
+      ...input,
+      mode: 'solo',
+      status: 'inProgress',
+    }),
+  );
+  return reference.id;
+}
+
+export function updateSoloSession(sessionId, patch) {
+  return updateDoc(doc(db, COLLECTIONS.sessions, sessionId), patch);
+}
+
+export async function getSoloSession(sessionId) {
+  const snapshot = await getDoc(doc(db, COLLECTIONS.sessions, sessionId));
+  return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+}
+
+export async function getSoloSessions(uid) {
+  const sessionsQuery = query(
+    collection(db, COLLECTIONS.sessions),
+    where('mode', '==', 'solo'),
+    where('userId', '==', uid),
+    orderBy('createdAt', 'desc'),
+  );
+  const snapshot = await getDocs(sessionsQuery);
+  return snapshot.docs.map((session) => ({ id: session.id, ...session.data() }));
+}
+
 export async function getSoloPersonalBest(uid, puzzleId) {
   const personalBestQuery = query(
     collection(db, COLLECTIONS.sessions),

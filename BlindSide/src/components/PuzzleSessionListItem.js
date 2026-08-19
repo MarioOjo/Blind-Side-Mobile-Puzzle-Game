@@ -18,9 +18,10 @@ export default function PuzzleSessionListItem({
   progressLabel,
   lastPlayed,
   showProgress = true,
+  statusLabelOverride,
   onPress,
 }) {
-  const statusLabel = STATUS_LABELS[status] ?? STATUS_LABELS['in-progress'];
+  const statusLabel = statusLabelOverride ?? (STATUS_LABELS[status] ?? STATUS_LABELS['in-progress']);
   const displayedProgress = progressLabel ?? (status === 'completed'
     ? 'Complete'
     : `${piecesRemaining} ${piecesRemaining === 1 ? 'piece' : 'pieces'} left`);

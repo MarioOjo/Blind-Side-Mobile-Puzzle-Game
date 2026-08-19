@@ -57,6 +57,10 @@ export function buildSessionDocument(input) {
       userId: input.userId,
       difficulty: input.difficulty,
       category: input.category,
+      // IDs of pieces confirmed placed, so an in-progress solo session can be
+      // resumed by pre-marking these as placed on the board — mirrors the
+      // cooperative session's placedPieceIds field.
+      placedPieceIds: input.placedPieceIds ?? [],
     };
   }
 

@@ -77,6 +77,7 @@ function sessionDocument(overrides = {}) {
     completedAt: null,
     movesTaken: 0,
     createdAt: Timestamp.now(),
+    placedPieceIds: [],
     ...overrides,
   };
 }
@@ -324,6 +325,32 @@ test('cooperative session checkpoint and completion updates are accepted for par
 
   // A stranger cannot update a session they are not part of.
   await assertFails(setDoc(doc(strangerDb, 'sessions/coop-active'), completion));
+});
+
+test('solo session checkpoint and completion updates are accepted for the owner and rejected for others', async () => {
+  const aliceDb = testEnvironment.authenticatedContext('alice-id').firestore();
+  const bobDb = testEnvironment.authenticatedContext('bob-id').firestore();
+
+  // Seed a valid in-progress solo session bypassing rules.
+  await testEnvironment.withSecurityRulesDisabled(async (context) => {
+    const adminDb = context.firestore();
+    await setDoc(doc(adminDb, 'sessions/solo-active'), sessionDocument());
+  });
+
+  const checkpoint = sessionDocument({ placedPieceIds: ['piece-0-0', 'piece-0-1'] });
+  // The owner can update the session.
+  await assertSucceeds(setDoc(doc(aliceDb, 'sessions/solo-active'), checkpoint));
+
+  const completion = sessionDocument({
+    placedPieceIds: ['piece-0-0', 'piece-0-1', 'piece-0-2'],
+    status: 'completed',
+    completionTime: 42000,
+    completedAt: Timestamp.now(),
+  });
+  await assertSucceeds(setDoc(doc(aliceDb, 'sessions/solo-active'), completion));
+
+  // Another user cannot update a solo session they don't own.
+  await assertFails(setDoc(doc(bobDb, 'sessions/solo-active'), completion));
 });
 
 test('questions collection is readable by authenticated users and write-protected', async () => {

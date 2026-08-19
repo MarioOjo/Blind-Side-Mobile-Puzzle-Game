@@ -151,11 +151,16 @@ test('cooperative session presentation uses partner profiles and placed-piece pr
     partnerIds: ['alice-id', 'bob-id'],
     status: 'inProgress',
     piecesPlacedTogether: 3,
+    tier: 'friendship',
+    puzzleId: 'puzzle-1',
     createdAt: { toDate: () => new Date(1000) },
   }, 'alice-id', profiles, 3601000);
 
   assert.deepEqual(presented, {
     id: 'session-1',
+    partnerId: 'bob-id',
+    tier: 'friendship',
+    puzzleId: 'puzzle-1',
     partnerName: 'Bob',
     status: 'inProgress',
     progressLabel: '3 pieces placed',

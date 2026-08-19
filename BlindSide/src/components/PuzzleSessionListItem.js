@@ -1,5 +1,5 @@
 // Presents a compact cooperative-session summary with partner, status, progress, and recency.
-import { View, Text, StyleSheet } from 'react-native';
+import { Pressable, View, Text, StyleSheet } from 'react-native';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 
@@ -18,14 +18,15 @@ export default function PuzzleSessionListItem({
   progressLabel,
   lastPlayed,
   showProgress = true,
+  onPress,
 }) {
   const statusLabel = STATUS_LABELS[status] ?? STATUS_LABELS['in-progress'];
   const displayedProgress = progressLabel ?? (status === 'completed'
     ? 'Complete'
     : `${piecesRemaining} ${piecesRemaining === 1 ? 'piece' : 'pieces'} left`);
 
-  return (
-    <View style={styles.row}>
+  const content = (
+    <>
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{partnerName.charAt(0).toUpperCase()}</Text>
       </View>
@@ -39,7 +40,22 @@ export default function PuzzleSessionListItem({
           <Text style={styles.lastPlayed}>{lastPlayed}</Text>
         </View>
       )}
-    </View>
+    </>
+  );
+
+  if (!onPress) {
+    return <View style={styles.row}>{content}</View>;
+  }
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`Resume puzzle with ${partnerName}`}
+      onPress={onPress}
+    >
+      {content}
+    </Pressable>
   );
 }
 
@@ -49,6 +65,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingVertical: 10,
+  },
+  rowPressed: {
+    opacity: 0.7,
   },
   avatar: {
     width: 40,

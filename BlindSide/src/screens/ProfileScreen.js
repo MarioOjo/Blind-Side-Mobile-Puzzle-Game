@@ -35,7 +35,7 @@ import {
 import { calculateSoloStats } from '../utils/soloStats';
 import { formatElapsedTime } from '../utils/soloRun';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -124,6 +124,23 @@ export default function ProfileScreen() {
       setLogoutError('Unable to sign out. Please try again.');
       setIsLoggingOut(false);
     }
+  };
+
+  // Puzzle lives inside the Home tab's stack, not Profile's — navigate into
+  // the sibling tab's nested screen rather than a same-stack push.
+  const handleResumeSession = (session) => {
+    if (session.status !== 'inProgress') return;
+    navigation.navigate('Home', {
+      screen: 'Puzzle',
+      params: {
+        mode: 'cooperative',
+        sessionId: session.id,
+        partnerId: session.partnerId,
+        partnerName: session.partnerName,
+        tier: session.tier,
+        puzzleId: session.puzzleId,
+      },
+    });
   };
 
   return (
@@ -239,6 +256,7 @@ export default function ProfileScreen() {
             status={session.status}
             lastPlayed={session.lastPlayed}
             showProgress={false}
+            onPress={session.status === 'inProgress' ? () => handleResumeSession(session) : undefined}
           />
         </Card>
       ))}

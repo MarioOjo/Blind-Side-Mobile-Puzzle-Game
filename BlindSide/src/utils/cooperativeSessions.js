@@ -29,6 +29,12 @@ export function presentCooperativeSession(session, currentUid, profilesByUid, no
 
   return {
     id: session.id,
+    // partnerId, tier, and puzzleId are carried through (not just used to
+    // derive the display fields above) so a tap can navigate straight back
+    // into PuzzleScreen with everything it needs to resume this session.
+    partnerId,
+    tier: session.tier,
+    puzzleId: session.puzzleId,
     partnerName: profilesByUid[partnerId]?.username ?? 'Puzzle Partner',
     status: session.status,
     progressLabel: session.status === 'completed'

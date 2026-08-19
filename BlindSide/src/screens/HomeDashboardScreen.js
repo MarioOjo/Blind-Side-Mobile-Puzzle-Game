@@ -78,6 +78,20 @@ export default function HomeDashboardScreen({ navigation }) {
   const visiblePartners = dashboard?.partners?.slice(0, 2) ?? [];
   const hasMorePartners = (dashboard?.partners?.length ?? 0) > 2;
 
+  // Only in-progress sessions resume; completed/abandoned rows stay non-interactive
+  // here (their full detail already lives one tap away via "View All" → Results).
+  const handleResumeSession = (session) => {
+    if (session.status !== 'inProgress') return;
+    navigation.navigate('Puzzle', {
+      mode: 'cooperative',
+      sessionId: session.id,
+      partnerId: session.partnerId,
+      partnerName: session.partnerName,
+      tier: session.tier,
+      puzzleId: session.puzzleId,
+    });
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -194,6 +208,7 @@ export default function HomeDashboardScreen({ navigation }) {
               status={session.status}
               progressLabel={session.progressLabel}
               lastPlayed={session.lastPlayed}
+              onPress={session.status === 'inProgress' ? () => handleResumeSession(session) : undefined}
             />
             {index < dashboard.sessions.length - 1 && <View style={styles.divider} />}
           </Fragment>

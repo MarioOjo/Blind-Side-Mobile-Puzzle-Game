@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Alert,
   ScrollView,
   View,
   Text,
@@ -16,7 +17,7 @@ import PuzzleMark from '../components/PuzzleMark';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
-import { getAuthErrorMessage, loginUser } from '../services/AuthService';
+import { getAuthErrorMessage, loginUser, sendPasswordReset } from '../services/AuthService';
 
 export default function LoginScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
@@ -26,7 +27,9 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -35,6 +38,7 @@ export default function LoginScreen({ navigation }) {
     }
 
     setErrorMessage('');
+    setResetMessage('');
     setIsSubmitting(true);
 
     try {
@@ -47,6 +51,39 @@ export default function LoginScreen({ navigation }) {
 
   const handleGooglePress = () => {
     setErrorMessage('Google sign-in requires a configured development build.');
+  };
+
+  const submitPasswordReset = async (targetEmail) => {
+    setErrorMessage('');
+    setResetMessage('');
+    setIsSendingReset(true);
+
+    try {
+      await sendPasswordReset(targetEmail);
+      setResetMessage('Check your email for a password reset link.');
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
+  const handleForgotPassword = () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setResetMessage('');
+      setErrorMessage('Enter your email above, then tap "Forgot Password?" again.');
+      return;
+    }
+
+    Alert.alert(
+      'Reset Password',
+      `Send a password reset link to ${trimmedEmail}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Send', onPress: () => submitPasswordReset(trimmedEmail) },
+      ],
+    );
   };
 
   return (
@@ -82,6 +119,7 @@ export default function LoginScreen({ navigation }) {
             onChangeText={(value) => {
               setEmail(value);
               setErrorMessage('');
+              setResetMessage('');
             }}
             onFocus={() => setFocusedField('email')}
             onBlur={() => setFocusedField(null)}
@@ -108,13 +146,18 @@ export default function LoginScreen({ navigation }) {
           </Pressable>
         </View>
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        {resetMessage ? <Text style={styles.resetText}>{resetMessage}</Text> : null}
         <PrimaryButton
           title={isSubmitting ? 'Logging In...' : 'Log In'}
           onPress={handleLogin}
           disabled={isSubmitting}
         />
-        {/* Future work: wire up password reset and verification once auth is implemented. */}
-        <Text style={styles.forgotLink}>Forgot Password?</Text>
+        <Text
+          style={[styles.forgotLink, isSendingReset && styles.forgotLinkDisabled]}
+          onPress={isSendingReset ? undefined : handleForgotPassword}
+        >
+          {isSendingReset ? 'Sending...' : 'Forgot Password?'}
+        </Text>
         {/* The divider separates the primary login path from alternate sign-in options. */}
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
@@ -226,8 +269,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 13,
   },
+  forgotLinkDisabled: {
+    opacity: 0.5,
+  },
   errorText: {
     color: '#FCA5A5',
+    fontFamily: typography.body,
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  resetText: {
+    color: colors.neonCyan,
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',

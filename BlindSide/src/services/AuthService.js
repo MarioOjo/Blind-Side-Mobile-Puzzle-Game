@@ -2,6 +2,7 @@
 import {
   createUserWithEmailAndPassword,
   deleteUser,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
@@ -58,6 +59,10 @@ export async function registerUser(username, email, password) {
 
 export function logoutUser() {
   return signOut(auth);
+}
+
+export function sendPasswordReset(email) {
+  return sendPasswordResetEmail(auth, email.trim());
 }
 
 const AUTH_ERROR_MESSAGES = {

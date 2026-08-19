@@ -94,6 +94,7 @@ function cooperativeSessionDocument(overrides = {}) {
     createdAt: Timestamp.now(),
     turnCount: 0,
     piecesPlacedTogether: 0,
+    placedPieceIds: [],
     questionsAnswered: 0,
     questionsSkipped: 0,
     ...overrides,

@@ -130,6 +130,11 @@ export async function getCooperativeSessions(uid) {
   return snapshot.docs.map((session) => ({ id: session.id, ...session.data() }));
 }
 
+export async function getCooperativeSession(sessionId) {
+  const snapshot = await getDoc(doc(db, COLLECTIONS.sessions, sessionId));
+  return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+}
+
 export async function getCompletedCooperativeSessions(uid) {
   // Filters client-side: adding status to the Firestore query would require a new composite
   // index beyond the existing (mode, partnerIds, createdAt) one. Per-user result sets are

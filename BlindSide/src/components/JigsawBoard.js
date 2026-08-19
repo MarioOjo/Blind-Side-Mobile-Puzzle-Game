@@ -75,10 +75,14 @@ export default function JigsawBoard({
   onComplete,
   onSettle,
   onImageError,
+  // Piece IDs to pre-mark as placed on mount (e.g. resuming a cooperative
+  // session). Piece IDs are deterministic from puzzle + difficulty, so these
+  // line up with freshly generated geometry without needing layout of its own.
+  initialPlacedIds,
 }) {
   const [workspace, setWorkspace] = useState({ width: 0, height: 0 });
   const [imageSize, setImageSize] = useState(null);
-  const [placedIds, setPlacedIds] = useState(() => new Set());
+  const [placedIds, setPlacedIds] = useState(() => new Set(initialPlacedIds));
   const [page, setPage] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const completionReported = useRef(false);
@@ -86,7 +90,7 @@ export default function JigsawBoard({
   useEffect(() => {
     let isActive = true;
     setImageSize(null);
-    setPlacedIds(new Set());
+    setPlacedIds(new Set(initialPlacedIds));
     setPage(0);
     completionReported.current = false;
 

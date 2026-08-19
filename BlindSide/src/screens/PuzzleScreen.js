@@ -17,6 +17,7 @@ import { auth } from '../services/FirebaseConfig';
 import {
   createCooperativeSession,
   createSoloCompletion,
+  getCooperativeSession,
   getPuzzleImage,
   getQuestionsForTier,
   getSoloPersonalBest,
@@ -53,6 +54,7 @@ function isLandscapeOrientation(orientation) {
 export default function PuzzleScreen({ navigation, route }) {
   const puzzleId = route.params?.puzzleId;
   const isCooperative = isValidCooperativeContext(route.params);
+  const sessionIdParam = route.params?.sessionId;
 
   // ── orientation ──
   const [orientation, setOrientation] = useState(null);
@@ -64,6 +66,13 @@ export default function PuzzleScreen({ navigation, route }) {
   const [loadError, setLoadError] = useState('');
   const [imageError, setImageError] = useState(false);
   const handleImageError = useCallback(() => setImageError(true), []);
+
+  // ── resuming an existing cooperative session (sessionId route param) ──
+  const [isResumeLoading, setIsResumeLoading] = useState(Boolean(sessionIdParam));
+  const [initialPlacedPieceIds, setInitialPlacedPieceIds] = useState(null);
+  // Elapsed time already on the clock when a resumed session was last saved,
+  // so the wall-clock timer continues instead of restarting from zero.
+  const resumedElapsedRef = useRef(0);
 
   // ── shared timer (wall-clock, never pauses) ──
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -134,30 +143,37 @@ export default function PuzzleScreen({ navigation, route }) {
     if (!isCooperative || completionHandled.current) return;
 
     // Start the wall-clock timer on the very first confirm of the session.
+    // Resumed sessions offset by however much time was already on the clock,
+    // so the total keeps counting up instead of restarting from zero.
     if (startedAt.current === null) {
-      startedAt.current = Date.now();
+      startedAt.current = Date.now() - resumedElapsedRef.current;
       timerInterval.current = setInterval(() => {
         setElapsedTime(Date.now() - startedAt.current);
       }, 250);
 
-      // Create the Firestore session document on first confirm.
-      const uid = auth.currentUser?.uid;
-      const partnerId = route.params?.partnerId;
-      const tier = route.params?.tier;
-      if (uid && partnerId && tier) {
-        cooperativeSessionCreatePromise.current = createCooperativeSession({
-          partnerIds: [uid, partnerId],
-          puzzleId,
-          tier,
-          status: 'inProgress',
-          movesTaken: 0,
-          piecesPlacedTogether: 0,
-          questionsAnswered: 0,
-          questionsSkipped: 0,
-          turnCount: 0,
-        })
-          .then((id) => { cooperativeSessionId.current = id; return id; })
-          .catch(() => null);
+      // Create the Firestore session document on first confirm — but only for
+      // a brand-new session. A resumed session already has cooperativeSessionId
+      // set (from the resume fetch below), so creating one here would fork a
+      // second document instead of continuing the existing one.
+      if (!cooperativeSessionId.current) {
+        const uid = auth.currentUser?.uid;
+        const partnerId = route.params?.partnerId;
+        const tier = route.params?.tier;
+        if (uid && partnerId && tier) {
+          cooperativeSessionCreatePromise.current = createCooperativeSession({
+            partnerIds: [uid, partnerId],
+            puzzleId,
+            tier,
+            status: 'inProgress',
+            movesTaken: 0,
+            piecesPlacedTogether: 0,
+            questionsAnswered: 0,
+            questionsSkipped: 0,
+            turnCount: 0,
+          })
+            .then((id) => { cooperativeSessionId.current = id; return id; })
+            .catch(() => null);
+        }
       }
     }
 
@@ -406,13 +422,59 @@ export default function PuzzleScreen({ navigation, route }) {
     placedCountRef.current = 0;
     totalPiecesRef.current = null;
     placedPieceIdsRef.current = [];
+    resumedElapsedRef.current = 0;
+    setInitialPlacedPieceIds(null);
 
     if (tier) {
       getQuestionsForTier(tier)
         .then((fetched) => setQuestions(fetched))
         .catch(() => setQuestions([]));
     }
-  }, [isCooperative, puzzleId, route.params]);
+
+    if (!sessionIdParam) {
+      setIsResumeLoading(false);
+      return undefined;
+    }
+
+    // Resume path: load the existing session and pre-mark its placed pieces
+    // instead of starting the puzzle fresh. JigsawBoard doesn't render until
+    // isResumeLoading clears, so it always mounts with the correct initial
+    // placed-piece set — no race between the board appearing and this fetch.
+    let cancelled = false;
+    setIsResumeLoading(true);
+
+    getCooperativeSession(sessionIdParam)
+      .then((session) => {
+        if (cancelled || !session) return;
+
+        cooperativeSessionId.current = session.id;
+        const placedIds = Array.isArray(session.placedPieceIds) ? session.placedPieceIds : [];
+        placedPieceIdsRef.current = [...placedIds];
+        placedCountRef.current = placedIds.length;
+        resumedElapsedRef.current = session.completionTime ?? 0;
+        setInitialPlacedPieceIds(placedIds);
+        setElapsedTime(resumedElapsedRef.current);
+
+        const turnCount = session.turnCount ?? 0;
+        setTurnState((current) => ({
+          ...(current ?? buildTurnState(playerAName, playerBName)),
+          placedCount: placedIds.length,
+          turnCount,
+          // currentPlayerIndex toggles once per completed turn in lockstep
+          // with turnCount (see cooperativeTurn.js) — turnCount % 2 always
+          // matches it, so it isn't a separate persisted field.
+          currentPlayerIndex: turnCount % 2,
+          questionsAnswered: session.questionsAnswered ?? 0,
+          questionsSkipped: session.questionsSkipped ?? 0,
+        }));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsResumeLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [isCooperative, puzzleId, route.params, sessionIdParam]);
 
   // ── reset on puzzle change ──
   useEffect(() => {
@@ -453,14 +515,21 @@ export default function PuzzleScreen({ navigation, route }) {
         </View>
       ) : null}
 
-      {isLandscape && !isLoading && loadError ? (
+      {isLandscape && !isLoading && isResumeLoading ? (
+        <View style={styles.centeredState}>
+          <ActivityIndicator size="large" color={colors.neonCyan} />
+          <Text style={styles.stateText}>Resuming puzzle...</Text>
+        </View>
+      ) : null}
+
+      {isLandscape && !isLoading && !isResumeLoading && loadError ? (
         <View style={styles.centeredState}>
           <Ionicons name="cloud-offline-outline" size={34} color={colors.neonCyan} />
           <Text style={styles.errorText}>{loadError}</Text>
         </View>
       ) : null}
 
-      {isLandscape && !isLoading && puzzle && !imageError ? (
+      {isLandscape && !isLoading && !isResumeLoading && puzzle && !imageError ? (
         <JigsawBoard
           puzzle={puzzle}
           layoutOverride={layoutOverride}
@@ -471,10 +540,11 @@ export default function PuzzleScreen({ navigation, route }) {
           onComplete={handlePuzzleComplete}
           onSettle={isCooperative ? handleCoopSettle : undefined}
           onImageError={handleImageError}
+          initialPlacedIds={initialPlacedPieceIds ?? undefined}
         />
       ) : null}
 
-      {isLandscape && !isLoading && puzzle && imageError ? (
+      {isLandscape && !isLoading && !isResumeLoading && puzzle && imageError ? (
         <View style={styles.centeredState}>
           <Ionicons name="image-outline" size={34} color={colors.neonCyan} />
           <Text style={styles.errorText}>The puzzle image could not be displayed.</Text>
@@ -495,7 +565,7 @@ export default function PuzzleScreen({ navigation, route }) {
         <CooperativeOnboardingOverlay onDismiss={handleDismissCoopOnboarding} />
       ) : null}
 
-      {isLandscape && isCooperative && !showCoopOnboarding && turnState && turnPhase !== null && turnPhase !== 'complete' ? (
+      {isLandscape && isCooperative && !showCoopOnboarding && !isResumeLoading && turnState && turnPhase !== null && turnPhase !== 'complete' ? (
         <CooperativeTurnOverlay
           phase={turnPhase}
           partnerNames={turnState.partnerNames}

@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { arrayUnion } from 'firebase/firestore';
 import JigsawBoard from '../components/JigsawBoard';
 import CooperativeTurnOverlay from '../components/CooperativeTurnOverlay';
 import CooperativeOnboardingOverlay from '../components/CooperativeOnboardingOverlay';
@@ -94,6 +95,10 @@ export default function PuzzleScreen({ navigation, route }) {
   // check. We store it when JigsawBoard first reports geometry via a new prop.
   const totalPiecesRef = useRef(null);
   const placedCountRef = useRef(0);
+  // Local mirror of every placed piece ID this session, so the final piece
+  // (which skips handleCoopCorrectPlacement's per-placement checkpoint) can
+  // still be included in the completion write.
+  const placedPieceIdsRef = useRef([]);
 
   useEffect(() => {
     if (!isCooperative) return;
@@ -160,10 +165,12 @@ export default function PuzzleScreen({ navigation, route }) {
   }, [isCooperative, puzzleId, route.params]);
 
   // ── cooperative: correct non-final placement ──
-  const handleCoopCorrectPlacement = useCallback((nextTurnState) => {
+  const handleCoopCorrectPlacement = useCallback((nextTurnState, pieceId) => {
     const elapsed = startedAt.current !== null ? Date.now() - startedAt.current : 0;
 
-    // Checkpoint Firestore (best-effort, fire-and-forget).
+    // Checkpoint Firestore (best-effort, fire-and-forget). arrayUnion is safe
+    // to call every placement — it's an atomic append, not a read-modify-write,
+    // and piggybacks on the write this call already made before Phase 1.
     if (cooperativeSessionId.current) {
       updateCooperativeSession(cooperativeSessionId.current, {
         piecesPlacedTogether: nextTurnState.placedCount,
@@ -171,6 +178,7 @@ export default function PuzzleScreen({ navigation, route }) {
         questionsAnswered: nextTurnState.questionsAnswered,
         questionsSkipped: nextTurnState.questionsSkipped,
         completionTime: normalizeElapsedTime(elapsed),
+        placedPieceIds: arrayUnion(pieceId),
       }).catch(() => {});
     }
 
@@ -186,16 +194,18 @@ export default function PuzzleScreen({ navigation, route }) {
   const handleCoopSettle = useCallback((pieceId) => {
     if (!isCooperative || completionHandled.current) return;
 
+    placedPieceIdsRef.current.push(pieceId);
     placedCountRef.current += 1;
     const isFinal = totalPiecesRef.current !== null
       && placedCountRef.current >= totalPiecesRef.current;
 
-    // Final placement is handled by onComplete — skip turn logic.
+    // Final placement is handled by onComplete — skip turn logic. The piece
+    // ID is still captured above so the completion write below includes it.
     if (isFinal) return;
 
     setTurnState((current) => {
       const next = recordCorrectPlacement(current, questions, false);
-      handleCoopCorrectPlacement(next);
+      handleCoopCorrectPlacement(next, pieceId);
       return next;
     });
   }, [handleCoopCorrectPlacement, isCooperative, questions]);
@@ -227,6 +237,10 @@ export default function PuzzleScreen({ navigation, route }) {
             turnCount: turnState?.turnCount ?? 0,
             questionsAnswered: turnState?.questionsAnswered ?? 0,
             questionsSkipped: turnState?.questionsSkipped ?? 0,
+            // Full overwrite (not arrayUnion): the final piece never went
+            // through handleCoopCorrectPlacement's per-placement checkpoint,
+            // so placedPieceIdsRef is the only complete record at this point.
+            placedPieceIds: placedPieceIdsRef.current,
           });
         } catch (writeError) {
           console.error('Cooperative completion write failed:', writeError?.message ?? writeError);
@@ -391,6 +405,7 @@ export default function PuzzleScreen({ navigation, route }) {
     setTurnState(buildTurnState(playerAName, playerBName));
     placedCountRef.current = 0;
     totalPiecesRef.current = null;
+    placedPieceIdsRef.current = [];
 
     if (tier) {
       getQuestionsForTier(tier)
@@ -408,6 +423,7 @@ export default function PuzzleScreen({ navigation, route }) {
     cooperativeSessionCreatePromise.current = null;
     placedCountRef.current = 0;
     totalPiecesRef.current = null;
+    placedPieceIdsRef.current = [];
     setElapsedTime(0);
     setTurnPhase(isCooperative ? 'confirming' : null);
     return clearTimer;

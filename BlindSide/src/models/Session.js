@@ -66,6 +66,13 @@ export function buildSessionDocument(input) {
     tier: input.tier,
     turnCount: input.turnCount ?? 0,
     piecesPlacedTogether: input.piecesPlacedTogether ?? 0,
+    // IDs of pieces confirmed placed (e.g. "piece-2-5"), so an in-progress
+    // session can be resumed by pre-marking these as placed on the board
+    // instead of only knowing how many pieces were placed. currentPlayerIndex
+    // is deliberately not stored here: it toggles once per completed turn in
+    // lockstep with turnCount (see cooperativeTurn.js), so turnCount % 2
+    // already reconstructs it.
+    placedPieceIds: input.placedPieceIds ?? [],
     questionsAnswered: input.questionsAnswered ?? 0,
     questionsSkipped: input.questionsSkipped ?? 0,
   };

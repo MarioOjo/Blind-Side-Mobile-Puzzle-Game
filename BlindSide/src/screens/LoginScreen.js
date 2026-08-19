@@ -199,9 +199,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   inputRowFocused: {
-    // Focus state shifts the border and glow to the accent cyan.
+    // Focus state shifts the border and glow to the accent cyan. elevation is
+    // deliberately omitted here: toggling it on the TextInput's direct parent
+    // the instant the field gains focus was breaking Android's IME input
+    // connection (keyboard would open but keystrokes never registered).
     borderColor: colors.neonCyan,
     ...shadows.glowCyan,
+    elevation: 0,
   },
   inputIcon: {
     marginRight: 8,

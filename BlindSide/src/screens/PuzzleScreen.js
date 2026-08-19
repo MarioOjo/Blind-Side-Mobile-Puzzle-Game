@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -13,6 +14,7 @@ import { arrayUnion } from 'firebase/firestore';
 import JigsawBoard from '../components/JigsawBoard';
 import CooperativeTurnOverlay from '../components/CooperativeTurnOverlay';
 import CooperativeOnboardingOverlay from '../components/CooperativeOnboardingOverlay';
+import ExitConfirmOverlay from '../components/ExitConfirmOverlay';
 import { auth } from '../services/FirebaseConfig';
 import {
   createCooperativeSession,
@@ -74,6 +76,14 @@ export default function PuzzleScreen({ navigation, route }) {
   // so the wall-clock timer continues instead of restarting from zero.
   const resumedElapsedRef = useRef(0);
 
+  // ── exit confirmation (hardware back, header back arrow, Pause icon) ──
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  // Every placement already autosaves (placedPieceIds), so leaving is always
+  // safe — this flag just lets our own intentional navigations (Save & Exit,
+  // and normal puzzle completion) through the beforeRemove intercept below
+  // without re-triggering the confirmation on themselves.
+  const allowLeaveRef = useRef(false);
+
   // ── shared timer (wall-clock, never pauses) ──
   const [elapsedTime, setElapsedTime] = useState(0);
   const startedAt = useRef(null);
@@ -127,6 +137,36 @@ export default function PuzzleScreen({ navigation, route }) {
     const uid = auth.currentUser?.uid;
     if (uid) AsyncStorage.setItem(`coopOnboardingSeen:${uid}`, 'true').catch(() => {});
   }, []);
+
+  // ── exit confirmation: intercept hardware back / header back arrow ──
+  // beforeRemove fires for every way a screen can leave the stack — Android
+  // hardware back, the native-stack header's back arrow, and any programmatic
+  // goBack()/navigate() that would pop this screen — so one listener covers
+  // both things the task calls out (hardware back and "an in-app back arrow
+  // if one exists") without needing a separate BackHandler subscription.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      if (allowLeaveRef.current) return;
+      event.preventDefault();
+      setShowExitConfirm(true);
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  // ── exit confirmation: Pause icon (works even during the 'confirming' phase) ──
+  const handleRequestExit = useCallback(() => {
+    setShowExitConfirm(true);
+  }, []);
+
+  const handleResumePlay = useCallback(() => {
+    setShowExitConfirm(false);
+  }, []);
+
+  const handleSaveAndExit = useCallback(() => {
+    setShowExitConfirm(false);
+    allowLeaveRef.current = true;
+    navigation.navigate('HomeDashboard');
+  }, [navigation]);
 
   // ── solo timer start (cooperative uses handleConfirmReceipt) ──
   const handleFirstInteraction = useCallback(() => {
@@ -263,6 +303,8 @@ export default function PuzzleScreen({ navigation, route }) {
         }
       }
 
+      // Puzzle finished normally — not an exit, so bypass the confirmation intercept.
+      allowLeaveRef.current = true;
       navigation.replace('CooperativeCompletion', {
         puzzleId,
         puzzleName: puzzle.imageName,
@@ -323,6 +365,8 @@ export default function PuzzleScreen({ navigation, route }) {
       bestUnavailable = true;
     }
 
+    // Puzzle finished normally — not an exit, so bypass the confirmation intercept.
+    allowLeaveRef.current = true;
     navigation.replace('SoloCompletion', {
       ...baseResults,
       ...comparison,
@@ -577,6 +621,27 @@ export default function PuzzleScreen({ navigation, route }) {
           onSkipQuestion={handleSkipQuestion}
         />
       ) : null}
+
+      {isLandscape ? (
+        // Above every other overlay (including the cooperative 'confirming'
+        // card) so it's always reachable, not just via hardware/header back.
+        <Pressable
+          style={({ pressed }) => [styles.pauseButton, pressed && styles.pauseButtonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Pause and exit options"
+          onPress={handleRequestExit}
+        >
+          <Ionicons name="pause" size={20} color={colors.neonCyan} />
+        </Pressable>
+      ) : null}
+
+      <ExitConfirmOverlay
+        visible={showExitConfirm}
+        isCooperative={isCooperative}
+        partnerName={route.params?.partnerName ?? 'your partner'}
+        onResume={handleResumePlay}
+        onSaveAndExit={handleSaveAndExit}
+      />
     </View>
   );
 }
@@ -586,6 +651,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.midnightNavy,
     padding: 16,
+  },
+  pauseButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    zIndex: 35,
+    elevation: 35,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.neonCyan,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pauseButtonPressed: {
+    opacity: 0.7,
   },
   centeredState: {
     flex: 1,

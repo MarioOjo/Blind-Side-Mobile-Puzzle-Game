@@ -79,6 +79,10 @@ export default function JigsawBoard({
   // session). Piece IDs are deterministic from puzzle + difficulty, so these
   // line up with freshly generated geometry without needing layout of its own.
   initialPlacedIds,
+  // Renders a pause icon on the tray header's title row when provided —
+  // board and tray tile the full workspace with no dead space, so this is
+  // the only spot that doesn't overlap the drag surface or an active piece.
+  onPauseRequest,
 }) {
   const [workspace, setWorkspace] = useState({ width: 0, height: 0 });
   const [imageSize, setImageSize] = useState(null);
@@ -265,7 +269,19 @@ export default function JigsawBoard({
             ]}
           >
             <View style={styles.trayHeader}>
-              <Text numberOfLines={1} style={styles.trayTitle}>{puzzle.imageName}</Text>
+              <View style={styles.trayTitleRow}>
+                <Text numberOfLines={1} style={styles.trayTitle}>{puzzle.imageName}</Text>
+                {onPauseRequest ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Pause and exit options"
+                    onPress={onPauseRequest}
+                    style={({ pressed }) => [styles.pauseButton, pressed && styles.pauseButtonPressed]}
+                  >
+                    <Ionicons name="pause" size={14} color={colors.neonCyan} />
+                  </Pressable>
+                ) : null}
+              </View>
               <View style={styles.trayMetaRow}>
                 <Text style={styles.progressText}>
                   {placedIds.size}/{geometry.pieceCount}
@@ -397,6 +413,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },
+  trayTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
   trayMetaRow: {
     marginTop: 5,
     flexDirection: 'row',
@@ -404,9 +426,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   trayTitle: {
+    flex: 1,
     color: colors.neonCyan,
     fontFamily: typography.subheading,
     fontSize: 10,
+  },
+  pauseButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.neonCyan,
+    borderRadius: 6,
+  },
+  pauseButtonPressed: {
+    backgroundColor: 'rgba(6,182,212,0.18)',
   },
   progressText: {
     color: colors.white,

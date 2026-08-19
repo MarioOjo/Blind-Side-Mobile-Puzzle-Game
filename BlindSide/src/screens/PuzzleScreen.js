@@ -2,13 +2,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { arrayUnion } from 'firebase/firestore';
@@ -61,11 +59,6 @@ export default function PuzzleScreen({ navigation, route }) {
   const puzzleId = route.params?.puzzleId;
   const isCooperative = isValidCooperativeContext(route.params);
   const sessionIdParam = route.params?.sessionId;
-  // Board and tray tile the entire workspace with no dead space in either
-  // orientation, so the pause icon unavoidably overlaps something — insets
-  // guard it from also sitting under Android's gesture/nav bar, which can be
-  // on either the left or bottom edge depending on landscape rotation.
-  const insets = useSafeAreaInsets();
 
   // ── orientation ──
   const [orientation, setOrientation] = useState(null);
@@ -702,6 +695,7 @@ export default function PuzzleScreen({ navigation, route }) {
           onSettle={isCooperative ? handleCoopSettle : handleSoloSettle}
           onImageError={handleImageError}
           initialPlacedIds={initialPlacedPieceIds ?? undefined}
+          onPauseRequest={handleRequestExit}
         />
       ) : null}
 
@@ -739,27 +733,6 @@ export default function PuzzleScreen({ navigation, route }) {
         />
       ) : null}
 
-      {isLandscape ? (
-        // Above every other overlay (including the cooperative 'confirming'
-        // card) so it's always reachable, not just via hardware/header back.
-        // Board and tray tile the full workspace with no dead space, so this
-        // unavoidably overlaps something — bottom-left of the board is the
-        // least-bad spot: it overlaps the drop-target board rather than the
-        // tray's page-nav controls or its actively-draggable piece tiles.
-        <Pressable
-          style={({ pressed }) => [
-            styles.pauseButton,
-            { bottom: 16 + insets.bottom, left: 16 + insets.left },
-            pressed && styles.pauseButtonPressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Pause and exit options"
-          onPress={handleRequestExit}
-        >
-          <Ionicons name="pause" size={20} color={colors.neonCyan} />
-        </Pressable>
-      ) : null}
-
       <ExitConfirmOverlay
         visible={showExitConfirm}
         isCooperative={isCooperative}
@@ -776,22 +749,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.midnightNavy,
     padding: 16,
-  },
-  pauseButton: {
-    position: 'absolute',
-    zIndex: 35,
-    elevation: 35,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1.5,
-    borderColor: colors.neonCyan,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pauseButtonPressed: {
-    opacity: 0.7,
   },
   centeredState: {
     flex: 1,

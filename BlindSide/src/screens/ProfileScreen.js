@@ -91,6 +91,7 @@ export default function ProfileScreen({ navigation }) {
           });
         }
       } catch (error) {
+        console.error('ProfileScreen loadProfile failed:', error);
         if (isActive) setLoadError('Unable to load your profile. Please try again.');
       } finally {
         if (isActive) setIsLoading(false);

@@ -8,8 +8,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import JigsawBoard from '../components/JigsawBoard';
 import CooperativeTurnOverlay from '../components/CooperativeTurnOverlay';
+import CooperativeOnboardingOverlay from '../components/CooperativeOnboardingOverlay';
 import { auth } from '../services/FirebaseConfig';
 import {
   createCooperativeSession,
@@ -85,11 +87,32 @@ export default function PuzzleScreen({ navigation, route }) {
   // Cooperative starts in 'confirming' so Player 1 must tap before the board activates.
   const [turnPhase, setTurnPhase] = useState('confirming');
   const [turnState, setTurnState] = useState(null);
+  // One-time explainer shown before this user's very first cooperative turn card ever.
+  const [showCoopOnboarding, setShowCoopOnboarding] = useState(false);
   // Total piece count is known once geometry is ready; JigsawBoard reports it
   // via onComplete, but we need it earlier for the "is this the final piece?"
   // check. We store it when JigsawBoard first reports geometry via a new prop.
   const totalPiecesRef = useRef(null);
   const placedCountRef = useRef(0);
+
+  useEffect(() => {
+    if (!isCooperative) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    let cancelled = false;
+    AsyncStorage.getItem(`coopOnboardingSeen:${uid}`)
+      .then((value) => {
+        if (!cancelled && value !== 'true') setShowCoopOnboarding(true);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isCooperative]);
+
+  const handleDismissCoopOnboarding = useCallback(() => {
+    setShowCoopOnboarding(false);
+    const uid = auth.currentUser?.uid;
+    if (uid) AsyncStorage.setItem(`coopOnboardingSeen:${uid}`, 'true').catch(() => {});
+  }, []);
 
   // ── solo timer start (cooperative uses handleConfirmReceipt) ──
   const handleFirstInteraction = useCallback(() => {
@@ -452,7 +475,11 @@ export default function PuzzleScreen({ navigation, route }) {
         </View>
       ) : null}
 
-      {isLandscape && isCooperative && turnState && turnPhase !== null && turnPhase !== 'complete' ? (
+      {isLandscape && isCooperative && showCoopOnboarding ? (
+        <CooperativeOnboardingOverlay onDismiss={handleDismissCoopOnboarding} />
+      ) : null}
+
+      {isLandscape && isCooperative && !showCoopOnboarding && turnState && turnPhase !== null && turnPhase !== 'complete' ? (
         <CooperativeTurnOverlay
           phase={turnPhase}
           partnerNames={turnState.partnerNames}

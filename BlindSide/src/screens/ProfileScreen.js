@@ -8,6 +8,7 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Card from '../components/Card';
@@ -170,11 +171,16 @@ export default function ProfileScreen({ navigation }) {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.content, isLandscape && styles.landscapeContent]}
-      showsVerticalScrollIndicator={false}
-    >
+    // top-only: the tab bar below already reserves its own safe-area space,
+    // so insetting all edges here would double-pad the bottom. Without this,
+    // the avatar (the first thing in the scroll content) renders partially
+    // under the status bar on edge-to-edge devices.
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, isLandscape && styles.landscapeContent]}
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.header}>
         <View style={[styles.avatar, isLandscape && styles.landscapeAvatar, shadows.glowCyan]}>
           {profileData?.profile.profileImage ? (
@@ -297,7 +303,8 @@ export default function ProfileScreen({ navigation }) {
           variant="outline"
         />
       </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -305,6 +312,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.midnightNavy,
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     flexGrow: 1,

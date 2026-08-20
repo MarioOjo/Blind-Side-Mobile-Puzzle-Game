@@ -414,26 +414,40 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   trayTitleRow: {
+    // No justifyContent: 'space-between' — the title uses flexShrink (not
+    // flex: 1), so it only claims as much width as its actual text needs,
+    // and the icon follows immediately after via the row's gap. This keeps
+    // the icon's X position tied to the title's length rather than always
+    // landing at the row's far edge, which is what put it in the same
+    // column as trayMetaRow's chevrons below.
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 6,
   },
   trayMetaRow: {
-    marginTop: 5,
+    // Wider than trayTitleRow's own height needs, so the two rows stay
+    // visibly separated even if a platform renders trayTitle's line height
+    // taller than expected.
+    marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   trayTitle: {
-    flex: 1,
+    // flexShrink (not flex: 1) + minWidth: 0 lets the box shrink to the
+    // actual text width instead of always expanding to fill the row —
+    // minWidth: 0 is required for numberOfLines truncation to still work
+    // once flexGrow is dropped (a standard RN flexbox gotcha).
+    flexShrink: 1,
+    minWidth: 0,
+    lineHeight: 13,
     color: colors.neonCyan,
     fontFamily: typography.subheading,
     fontSize: 10,
   },
   pauseButton: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

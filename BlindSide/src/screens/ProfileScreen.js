@@ -367,13 +367,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   soloStatGrid: {
+    // Matches statRow/statCard's side-by-side pattern below (flex: 1 cards,
+    // no wrap) instead of flexWrap + flexBasis, which was wide enough to
+    // force these three cards onto separate rows on a portrait phone.
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 10,
   },
   soloStatCard: {
-    flexGrow: 1,
-    flexBasis: 180,
+    flex: 1,
     alignItems: 'center',
     gap: 4,
   },

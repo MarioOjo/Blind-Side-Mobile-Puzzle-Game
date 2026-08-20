@@ -13,6 +13,7 @@ import { arrayUnion } from 'firebase/firestore';
 import JigsawBoard from '../components/JigsawBoard';
 import CooperativeTurnOverlay from '../components/CooperativeTurnOverlay';
 import CooperativeOnboardingOverlay from '../components/CooperativeOnboardingOverlay';
+import SoloOnboardingOverlay from '../components/SoloOnboardingOverlay';
 import ExitConfirmOverlay from '../components/ExitConfirmOverlay';
 import { auth } from '../services/FirebaseConfig';
 import {
@@ -115,6 +116,10 @@ export default function PuzzleScreen({ navigation, route }) {
   const [turnState, setTurnState] = useState(null);
   // One-time explainer shown before this user's very first cooperative turn card ever.
   const [showCoopOnboarding, setShowCoopOnboarding] = useState(false);
+  // One-time explainer shown before this user's very first solo puzzle ever
+  // — a separate AsyncStorage key from the cooperative one, so completing
+  // one doesn't skip the other.
+  const [showSoloOnboarding, setShowSoloOnboarding] = useState(false);
   // Total piece count is known once geometry is ready; JigsawBoard reports it
   // via onComplete, but we need it earlier for the "is this the final piece?"
   // check. We store it when JigsawBoard first reports geometry via a new prop.
@@ -142,6 +147,25 @@ export default function PuzzleScreen({ navigation, route }) {
     setShowCoopOnboarding(false);
     const uid = auth.currentUser?.uid;
     if (uid) AsyncStorage.setItem(`coopOnboardingSeen:${uid}`, 'true').catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (isCooperative) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    let cancelled = false;
+    AsyncStorage.getItem(`soloOnboardingSeen:${uid}`)
+      .then((value) => {
+        if (!cancelled && value !== 'true') setShowSoloOnboarding(true);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isCooperative]);
+
+  const handleDismissSoloOnboarding = useCallback(() => {
+    setShowSoloOnboarding(false);
+    const uid = auth.currentUser?.uid;
+    if (uid) AsyncStorage.setItem(`soloOnboardingSeen:${uid}`, 'true').catch(() => {});
   }, []);
 
   // ── exit confirmation: intercept hardware back / header back arrow ──
@@ -718,6 +742,10 @@ export default function PuzzleScreen({ navigation, route }) {
 
       {isLandscape && isCooperative && showCoopOnboarding ? (
         <CooperativeOnboardingOverlay onDismiss={handleDismissCoopOnboarding} />
+      ) : null}
+
+      {isLandscape && !isCooperative && showSoloOnboarding ? (
+        <SoloOnboardingOverlay onDismiss={handleDismissSoloOnboarding} />
       ) : null}
 
       {isLandscape && isCooperative && !showCoopOnboarding && !isResumeLoading && turnState && turnPhase !== null && turnPhase !== 'complete' ? (

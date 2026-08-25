@@ -84,6 +84,20 @@ const puzzleImages = [
     imageURL: 'https://images.unsplash.com/vector-1741297497337-cc4b22193d16?auto=format&fit=crop&w=1200&q=85',
     difficultyRecommended: 'easy',
   },
+  {
+    imageId: 'people-outdoor-portrait',
+    imageName: 'Outdoor Portrait',
+    category: 'people',
+    imageURL: 'https://images.unsplash.com/photo-1751628421100-e5ac33b8c52e?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'medium',
+  },
+  {
+    imageId: 'people-elderly-portrait',
+    imageName: 'Warm Smile',
+    category: 'people',
+    imageURL: 'https://images.unsplash.com/photo-1758691030490-fe1cb6c972ce?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'medium',
+  },
 ];
 
 const questions = [

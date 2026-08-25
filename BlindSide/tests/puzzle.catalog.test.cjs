@@ -32,7 +32,7 @@ test('fixed difficulties and categories remain visible with real counts', () => 
     getAvailableDifficulties(puzzleImages).map(({ key, count }) => ({ key, count })),
     [
       { key: 'easy', count: 5 },
-      { key: 'medium', count: 4 },
+      { key: 'medium', count: 6 },
       { key: 'hard', count: 3 },
     ],
   );
@@ -48,7 +48,7 @@ test('fixed difficulties and categories remain visible with real counts', () => 
     getAvailableCategories(puzzleImages, 'medium').map(({ key, count }) => ({ key, count })),
     [
       { key: 'characters', count: 1 },
-      { key: 'people', count: 0 },
+      { key: 'people', count: 2 },
       { key: 'places', count: 2 },
     ],
   );

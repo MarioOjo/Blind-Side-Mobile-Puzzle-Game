@@ -90,9 +90,9 @@ test('question builder accepts only supported relationship tiers', () => {
 });
 
 test('gameplay seed manifest matches puzzle and question schemas', () => {
-  assert.equal(puzzleImages.length, 12);
+  assert.equal(puzzleImages.length, 14);
   assert.equal(questions.length, 15);
-  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 12);
+  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 14);
   assert.equal(new Set(questions.map(({ questionId }) => questionId)).size, 15);
 
   assert.deepEqual(
@@ -103,7 +103,9 @@ test('gameplay seed manifest matches puzzle and question schemas', () => {
       'characters-retro-robot',
       'characters-swirly-monster',
       'people-colorful-portrait',
+      'people-elderly-portrait',
       'people-maya',
+      'people-outdoor-portrait',
       'places-machu-picchu',
       'places-marrakech-market',
       'places-santorini',
@@ -129,6 +131,8 @@ test('gameplay seed manifest matches puzzle and question schemas', () => {
   assert.equal(imagesById['characters-retro-robot'].difficultyRecommended, 'easy');
   assert.equal(imagesById['characters-swirly-monster'].difficultyRecommended, 'medium');
   assert.equal(imagesById['characters-narwhal'].difficultyRecommended, 'easy');
+  assert.equal(imagesById['people-outdoor-portrait'].difficultyRecommended, 'medium');
+  assert.equal(imagesById['people-elderly-portrait'].difficultyRecommended, 'medium');
   puzzleImages.forEach((image) => {
     assert.deepEqual(buildPuzzleImageDocument(image), image);
     assert.deepEqual(

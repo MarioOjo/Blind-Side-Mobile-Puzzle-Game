@@ -33,7 +33,7 @@ test('fixed difficulties and categories remain visible with real counts', () => 
     [
       { key: 'easy', count: 5 },
       { key: 'medium', count: 6 },
-      { key: 'hard', count: 3 },
+      { key: 'hard', count: 5 },
     ],
   );
   assert.deepEqual(
@@ -55,7 +55,7 @@ test('fixed difficulties and categories remain visible with real counts', () => 
   assert.deepEqual(
     getAvailableCategories(puzzleImages, 'hard').map(({ key, count }) => ({ key, count })),
     [
-      { key: 'characters', count: 0 },
+      { key: 'characters', count: 2 },
       { key: 'people', count: 1 },
       { key: 'places', count: 1 },
     ],
@@ -85,13 +85,24 @@ test('catalog filtering is normalized, deterministic, and safe for malformed inp
     ],
   );
   assert.deepEqual(getPuzzlesForSelection([null, {}, ...puzzleImages], { difficulty: 'hard' })
-    .map(({ imageId }) => imageId), ['textures-coffee-beans', 'places-marrakech-market', 'people-colorful-portrait']);
+    .map(({ imageId }) => imageId), [
+    'characters-bird-mural',
+    'textures-coffee-beans',
+    'characters-mosaic-mural',
+    'places-marrakech-market',
+    'people-colorful-portrait',
+  ]);
 });
 
 test('category routing shows empty state and preserves populated branches', () => {
-  assert.deepEqual(getCategoryRoute(puzzleImages, 'hard', 'characters'), {
+  // Every real category x difficulty combination among the 3 selectable
+  // categories now has at least one match (hard/characters gained 2 here),
+  // so 'textures' — a valid schema category, just excluded from the
+  // selectable CATEGORY_OPTIONS UI — is the only remaining way to
+  // demonstrate a genuine empty state with real manifest data.
+  assert.deepEqual(getCategoryRoute(puzzleImages, 'easy', 'textures'), {
     screen: 'PuzzleSelection',
-    params: { difficulty: 'hard', category: 'characters' },
+    params: { difficulty: 'easy', category: 'textures' },
   });
   assert.deepEqual(getCategoryRoute(puzzleImages, 'easy', 'places'), {
     screen: 'Puzzle',

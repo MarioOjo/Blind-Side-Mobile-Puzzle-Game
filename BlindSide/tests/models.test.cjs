@@ -90,15 +90,17 @@ test('question builder accepts only supported relationship tiers', () => {
 });
 
 test('gameplay seed manifest matches puzzle and question schemas', () => {
-  assert.equal(puzzleImages.length, 14);
+  assert.equal(puzzleImages.length, 16);
   assert.equal(questions.length, 15);
-  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 14);
+  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 16);
   assert.equal(new Set(questions.map(({ questionId }) => questionId)).size, 15);
 
   assert.deepEqual(
     puzzleImages.map(({ imageId }) => imageId).sort(),
     [
       'characters-astronaut',
+      'characters-bird-mural',
+      'characters-mosaic-mural',
       'characters-narwhal',
       'characters-retro-robot',
       'characters-swirly-monster',
@@ -133,6 +135,8 @@ test('gameplay seed manifest matches puzzle and question schemas', () => {
   assert.equal(imagesById['characters-narwhal'].difficultyRecommended, 'easy');
   assert.equal(imagesById['people-outdoor-portrait'].difficultyRecommended, 'medium');
   assert.equal(imagesById['people-elderly-portrait'].difficultyRecommended, 'medium');
+  assert.equal(imagesById['characters-mosaic-mural'].difficultyRecommended, 'hard');
+  assert.equal(imagesById['characters-bird-mural'].difficultyRecommended, 'hard');
   puzzleImages.forEach((image) => {
     assert.deepEqual(buildPuzzleImageDocument(image), image);
     assert.deepEqual(

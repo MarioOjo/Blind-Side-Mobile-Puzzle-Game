@@ -98,6 +98,20 @@ const puzzleImages = [
     imageURL: 'https://images.unsplash.com/photo-1758691030490-fe1cb6c972ce?auto=format&fit=crop&w=1200&q=85',
     difficultyRecommended: 'medium',
   },
+  {
+    imageId: 'characters-mosaic-mural',
+    imageName: 'Colorful Mosaic Mural',
+    category: 'characters',
+    imageURL: 'https://images.unsplash.com/photo-1763934385931-8888d883fe3c?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'hard',
+  },
+  {
+    imageId: 'characters-bird-mural',
+    imageName: 'Cartoon Bird Mural',
+    category: 'characters',
+    imageURL: 'https://images.unsplash.com/photo-1777745965283-0776c92feb56?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'hard',
+  },
 ];
 
 const questions = [

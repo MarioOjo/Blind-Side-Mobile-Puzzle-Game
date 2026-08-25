@@ -6,6 +6,10 @@ A cooperative, social puzzle-solving mobile app. Two people solve a jigsaw puzzl
 
 Built as a DV300 project at Open Window Institute.
 
+## Demo
+
+[Watch the demo video](https://drive.google.com/file/d/1tXrp-AkhyPL9golD3k2e2z6M2nh7kHJE/view?usp=drive_link)
+
 ## Concept
 
 BlindSide is designed around **connection, not competition**. The core cooperative mode intentionally has no winner or loser: two players share one device, rotating it between turns, working toward completing a puzzle together against a shared clock. Each correctly placed piece surfaces a social question, scaling in intimacy as the puzzle nears completion:

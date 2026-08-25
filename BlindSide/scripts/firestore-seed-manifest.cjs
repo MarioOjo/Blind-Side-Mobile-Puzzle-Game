@@ -42,6 +42,48 @@ const puzzleImages = [
     imageURL: 'https://images.unsplash.com/photo-1632765854612-9b02b6ec2b15?auto=format&fit=crop&w=1200&q=85',
     difficultyRecommended: 'hard',
   },
+  {
+    imageId: 'places-machu-picchu',
+    imageName: 'Machu Picchu',
+    category: 'places',
+    imageURL: 'https://images.unsplash.com/photo-1568805746970-0bbae56ab18b?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'medium',
+  },
+  {
+    imageId: 'places-venice-canal',
+    imageName: 'Venice Canal',
+    category: 'places',
+    imageURL: 'https://images.unsplash.com/photo-1767199289290-010e7caf8240?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'medium',
+  },
+  {
+    imageId: 'places-marrakech-market',
+    imageName: 'Marrakech Market',
+    category: 'places',
+    imageURL: 'https://images.unsplash.com/photo-1753740023014-143ab3536662?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'hard',
+  },
+  {
+    imageId: 'characters-retro-robot',
+    imageName: 'Retro Robot',
+    category: 'characters',
+    imageURL: 'https://images.unsplash.com/vector-1748411946255-f991f9dd944c?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'easy',
+  },
+  {
+    imageId: 'characters-swirly-monster',
+    imageName: 'Swirly Monster',
+    category: 'characters',
+    imageURL: 'https://images.unsplash.com/vector-1761525907514-61fbb05a028a?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'medium',
+  },
+  {
+    imageId: 'characters-narwhal',
+    imageName: 'Cartoon Narwhal',
+    category: 'characters',
+    imageURL: 'https://images.unsplash.com/vector-1741297497337-cc4b22193d16?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'easy',
+  },
 ];
 
 const questions = [

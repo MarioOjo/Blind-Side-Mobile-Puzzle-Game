@@ -90,18 +90,24 @@ test('question builder accepts only supported relationship tiers', () => {
 });
 
 test('gameplay seed manifest matches puzzle and question schemas', () => {
-  assert.equal(puzzleImages.length, 6);
+  assert.equal(puzzleImages.length, 12);
   assert.equal(questions.length, 15);
-  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 6);
+  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 12);
   assert.equal(new Set(questions.map(({ questionId }) => questionId)).size, 15);
 
   assert.deepEqual(
     puzzleImages.map(({ imageId }) => imageId).sort(),
     [
       'characters-astronaut',
+      'characters-narwhal',
+      'characters-retro-robot',
+      'characters-swirly-monster',
       'people-colorful-portrait',
       'people-maya',
+      'places-machu-picchu',
+      'places-marrakech-market',
       'places-santorini',
+      'places-venice-canal',
       'textures-brick-wall',
       'textures-coffee-beans',
     ],
@@ -117,6 +123,12 @@ test('gameplay seed manifest matches puzzle and question schemas', () => {
   assert.equal(imagesById['textures-brick-wall'].difficultyRecommended, 'medium');
   assert.equal(imagesById['textures-coffee-beans'].difficultyRecommended, 'hard');
   assert.equal(imagesById['people-colorful-portrait'].difficultyRecommended, 'hard');
+  assert.equal(imagesById['places-machu-picchu'].difficultyRecommended, 'medium');
+  assert.equal(imagesById['places-venice-canal'].difficultyRecommended, 'medium');
+  assert.equal(imagesById['places-marrakech-market'].difficultyRecommended, 'hard');
+  assert.equal(imagesById['characters-retro-robot'].difficultyRecommended, 'easy');
+  assert.equal(imagesById['characters-swirly-monster'].difficultyRecommended, 'medium');
+  assert.equal(imagesById['characters-narwhal'].difficultyRecommended, 'easy');
   puzzleImages.forEach((image) => {
     assert.deepEqual(buildPuzzleImageDocument(image), image);
     assert.deepEqual(
@@ -126,7 +138,10 @@ test('gameplay seed manifest matches puzzle and question schemas', () => {
     const imageUrl = new URL(image.imageURL);
     assert.equal(imageUrl.protocol, 'https:');
     assert.equal(imageUrl.hostname, 'images.unsplash.com');
-    assert.match(imageUrl.pathname, /^\/photo-[\w-]+$/);
+    // /photo- for standard Unsplash photographs, /vector- for its free
+    // illustration assets (the Characters category's non-photorealistic
+    // entries) — both permanently accepted, not scoped to this batch.
+    assert.match(imageUrl.pathname, /^\/(photo|vector)-[\w-]+$/);
   });
 
   const tierCounts = questions.reduce((counts, question) => ({

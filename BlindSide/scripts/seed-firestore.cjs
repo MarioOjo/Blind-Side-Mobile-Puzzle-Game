@@ -36,8 +36,8 @@ function getFirebaseRcProject() {
 }
 
 function validateManifest() {
-  if (puzzleImages.length !== 6 || questions.length !== 15) {
-    throw new Error('Expected 6 puzzle images and 15 questions.');
+  if (puzzleImages.length !== 12 || questions.length !== 15) {
+    throw new Error('Expected 12 puzzle images and 15 questions.');
   }
 
   const imageIds = new Set();
@@ -58,9 +58,16 @@ function validateManifest() {
     if (!allowedDifficulties.has(image.difficultyRecommended)) {
       throw new Error(`Puzzle ${image.imageId} has an unsupported difficulty.`);
     }
+    // /photo- covers Unsplash's standard photographs; /vector- covers its free
+    // (non-Unsplash+) illustration assets, used by the Characters category's
+    // illustrated/non-photorealistic entries. Both are permanently accepted,
+    // not scoped to a specific batch of images.
     const imageUrl = new URL(image.imageURL);
-    if (imageUrl.protocol !== 'https:' || imageUrl.hostname !== 'images.unsplash.com') {
-      throw new Error(`Puzzle ${image.imageId} must use a direct Unsplash HTTPS URL.`);
+    const isDirectUnsplashUrl = imageUrl.protocol === 'https:'
+      && imageUrl.hostname === 'images.unsplash.com'
+      && /^\/(photo|vector)-[\w-]+$/.test(imageUrl.pathname);
+    if (!isDirectUnsplashUrl) {
+      throw new Error(`Puzzle ${image.imageId} must use a direct Unsplash HTTPS photo or vector URL.`);
     }
     imageIds.add(image.imageId);
     categories.add(image.category);

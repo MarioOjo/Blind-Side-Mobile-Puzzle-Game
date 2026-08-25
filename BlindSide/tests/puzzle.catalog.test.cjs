@@ -31,34 +31,33 @@ test('fixed difficulties and categories remain visible with real counts', () => 
   assert.deepEqual(
     getAvailableDifficulties(puzzleImages).map(({ key, count }) => ({ key, count })),
     [
-      { key: 'easy', count: 3 },
-      { key: 'medium', count: 1 },
-      { key: 'hard', count: 2 },
+      { key: 'easy', count: 5 },
+      { key: 'medium', count: 4 },
+      { key: 'hard', count: 3 },
     ],
   );
   assert.deepEqual(
     getAvailableCategories(puzzleImages, 'easy').map(({ key, count }) => ({ key, count })),
     [
-      { key: 'characters', count: 1 },
+      { key: 'characters', count: 3 },
       { key: 'people', count: 1 },
       { key: 'places', count: 1 },
     ],
   );
-  const emptyFixedCategories = [
-    { key: 'characters', count: 0 },
-    { key: 'people', count: 0 },
-    { key: 'places', count: 0 },
-  ];
   assert.deepEqual(
     getAvailableCategories(puzzleImages, 'medium').map(({ key, count }) => ({ key, count })),
-    emptyFixedCategories,
+    [
+      { key: 'characters', count: 1 },
+      { key: 'people', count: 0 },
+      { key: 'places', count: 2 },
+    ],
   );
   assert.deepEqual(
     getAvailableCategories(puzzleImages, 'hard').map(({ key, count }) => ({ key, count })),
     [
       { key: 'characters', count: 0 },
       { key: 'people', count: 1 },
-      { key: 'places', count: 0 },
+      { key: 'places', count: 1 },
     ],
   );
 });
@@ -86,13 +85,13 @@ test('catalog filtering is normalized, deterministic, and safe for malformed inp
     ],
   );
   assert.deepEqual(getPuzzlesForSelection([null, {}, ...puzzleImages], { difficulty: 'hard' })
-    .map(({ imageId }) => imageId), ['textures-coffee-beans', 'people-colorful-portrait']);
+    .map(({ imageId }) => imageId), ['textures-coffee-beans', 'places-marrakech-market', 'people-colorful-portrait']);
 });
 
 test('category routing shows empty state and preserves populated branches', () => {
-  assert.deepEqual(getCategoryRoute(puzzleImages, 'medium', 'characters'), {
+  assert.deepEqual(getCategoryRoute(puzzleImages, 'hard', 'characters'), {
     screen: 'PuzzleSelection',
-    params: { difficulty: 'medium', category: 'characters' },
+    params: { difficulty: 'hard', category: 'characters' },
   });
   assert.deepEqual(getCategoryRoute(puzzleImages, 'easy', 'places'), {
     screen: 'Puzzle',

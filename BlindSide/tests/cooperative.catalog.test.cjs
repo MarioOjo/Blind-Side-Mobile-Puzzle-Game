@@ -52,13 +52,14 @@ test('cooperative tiers and fixed Hard category counts are deterministic', () =>
     [
       { key: 'characters', count: 0 },
       { key: 'people', count: 1 },
-      { key: 'places', count: 0 },
+      { key: 'places', count: 1 },
     ],
   );
 });
 
 test('cooperative catalog includes only Hard puzzles in fixed real categories', () => {
   assert.deepEqual(getCooperativePuzzles(puzzleImages).map(({ imageId }) => imageId), [
+    'places-marrakech-market',
     'people-colorful-portrait',
   ]);
   assert.deepEqual(getCooperativePuzzles([null, {}, ...puzzleImages], 'people')

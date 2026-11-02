@@ -91,9 +91,9 @@ test('question builder accepts only supported relationship tiers', () => {
 });
 
 test('gameplay seed manifest matches puzzle and question schemas', () => {
-  assert.equal(puzzleImages.length, 24);
+  assert.equal(puzzleImages.length, 36);
   assert.equal(questions.length, 60);
-  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 24);
+  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 36);
   assert.equal(new Set(questions.map(({ questionId }) => questionId)).size, 60);
   assert.equal(new Set(questions.map(({ text }) => text.toLowerCase())).size, 60);
 
@@ -105,25 +105,37 @@ test('gameplay seed manifest matches puzzle and question schemas', () => {
       'characters-graffiti-monsters',
       'characters-mosaic-mural',
       'characters-narwhal',
+      'characters-nesting-dolls',
       'characters-retro-robot',
       'characters-swirly-monster',
+      'characters-tin-robot',
+      'people-bright-smile',
       'people-carnival-dancers',
       'people-colorful-portrait',
       'people-elderly-portrait',
+      'people-fabric-market',
       'people-holi-festival',
+      'people-knitted-beanie',
       'people-maya',
       'people-outdoor-portrait',
+      'places-bo-kaap',
       'places-burano',
       'places-hot-air-balloons',
+      'places-lions-head',
       'places-machu-picchu',
       'places-marrakech-market',
       'places-santorini',
+      'places-table-mountain',
       'places-venice-canal',
       'textures-autumn-leaves',
+      'textures-beach-pebbles',
       'textures-brick-wall',
       'textures-candy-sprinkles',
+      'textures-citrus-slices',
       'textures-coffee-beans',
       'textures-paint-swirl',
+      'textures-rainbow-pencils',
+      'textures-yarn-wall',
     ],
   );
   assert.deepEqual(
@@ -154,6 +166,18 @@ test('gameplay seed manifest matches puzzle and question schemas', () => {
     assert.equal(imagesById[imageId].difficultyRecommended, 'hard');
   }
   assert.equal(imagesById['textures-paint-swirl'].difficultyRecommended, 'easy');
+  for (const imageId of [
+    'people-bright-smile', 'people-knitted-beanie', 'places-bo-kaap', 'places-table-mountain',
+    'textures-rainbow-pencils', 'textures-citrus-slices',
+  ]) {
+    assert.equal(imagesById[imageId].difficultyRecommended, 'easy');
+  }
+  for (const imageId of [
+    'characters-tin-robot', 'characters-nesting-dolls', 'people-fabric-market', 'places-lions-head',
+    'textures-beach-pebbles', 'textures-yarn-wall',
+  ]) {
+    assert.equal(imagesById[imageId].difficultyRecommended, 'medium');
+  }
   puzzleImages.forEach((image) => {
     assert.deepEqual(buildPuzzleImageDocument(image), image);
     assert.deepEqual(

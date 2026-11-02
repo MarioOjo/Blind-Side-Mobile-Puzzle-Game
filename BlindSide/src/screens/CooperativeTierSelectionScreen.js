@@ -1,4 +1,5 @@
-// Starts cooperative selection with a fixed relationship tier while preserving partner context.
+// Starts cooperative selection by picking the deepest relationship tier questions may reach,
+// while preserving partner context. Questions start light and escalate toward it.
 import { useWindowDimensions } from 'react-native';
 import PuzzleSelectionLayout from '../components/PuzzleSelectionLayout';
 import PuzzleSelectionRow from '../components/PuzzleSelectionRow';
@@ -15,8 +16,10 @@ export default function CooperativeTierSelectionScreen({ navigation, route }) {
 
   return (
     <PuzzleSelectionLayout
-      title="Choose tier"
-      subtitle={hasPartner ? `Playing with ${partnerName ?? 'Puzzle Partner'}` : ''}
+      title="How deep should questions go?"
+      subtitle={hasPartner
+        ? `Playing with ${partnerName ?? 'Puzzle Partner'} — questions start light and build up to the tier you pick.`
+        : ''}
       isLoading={false}
       error={hasPartner ? '' : 'Choose a puzzle partner before selecting a tier.'}
       isEmpty={false}

@@ -62,6 +62,7 @@ export default function CooperativeCompletionScreen({ navigation, route }) {
         <View style={styles.statsRow}>
           <Stat label="Time" value={formatElapsedTime(results.completionTime)} />
           <Stat label="Turns" value={String(results.turnCount ?? 0)} />
+          <Stat label="Moves" value={String(results.movesTaken ?? 0)} />
         </View>
 
         <View style={styles.statsRow}>

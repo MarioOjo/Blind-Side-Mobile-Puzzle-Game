@@ -59,7 +59,8 @@ function loadAuthService() {
     if (request === '../models/User') {
       return {
         normalizeUsername: (username) => username.trim().toLowerCase(),
-        buildUserDocument: ({ uid, username, email }) => ({ uid, username, email }),
+        isValidUsername: (username) => /^[A-Za-z0-9_.]{3,20}$/.test(username.trim()),
+        buildUserDocument: ({ uid, username }) => ({ uid, username }),
       };
     }
     if (request === './FirebaseConfig') return { auth: 'auth', db: 'db' };
@@ -129,4 +130,12 @@ test('rollback cleanup failure preserves the actionable registration error', asy
   assert.deepEqual(events.map(([event]) => event), [
     'createAuth', 'createTransaction', 'set', 'set', 'commit', 'deleteAuth', 'signOut',
   ]);
+});
+
+test('invalid usernames are rejected before any Auth account is created', async () => {
+  await assert.rejects(
+    registerUser('no spaces allowed', 'new@example.com', 'password'),
+    { code: 'auth/invalid-username' },
+  );
+  assert.deepEqual(events, []);
 });

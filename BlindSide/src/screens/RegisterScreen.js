@@ -5,6 +5,7 @@ import PrimaryButton from '../components/PrimaryButton';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import { getAuthErrorMessage, registerUser } from '../services/AuthService';
+import { isValidUsername, USERNAME_RULES_MESSAGE } from '../models/User';
 
 export default function RegisterScreen({
   navigation,
@@ -19,6 +20,11 @@ export default function RegisterScreen({
   const handleRegister = async () => {
     if (!username.trim() || !email.trim() || !password) {
       setErrorMessage('Complete all fields to create your account.');
+      return;
+    }
+
+    if (!isValidUsername(username)) {
+      setErrorMessage(USERNAME_RULES_MESSAGE);
       return;
     }
 
@@ -43,7 +49,7 @@ export default function RegisterScreen({
       {/* The card groups sign-up inputs and the auth action into one panel. */}
       <Card style={styles.card}>
         <Text style={styles.heading}>Create Account</Text>
-        {/* Username will likely map to the profile handle in a future sprint. */}
+        {/* Username is the public handle partners search for; the format is enforced in models/User.js. */}
         <TextInput
           style={styles.input}
           placeholder="Username"

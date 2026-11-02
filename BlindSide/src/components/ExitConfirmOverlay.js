@@ -16,6 +16,7 @@ export default function ExitConfirmOverlay({
   partnerName,
   onResume,
   onSaveAndExit,
+  saveFailed = false,
 }) {
   if (!visible) return null;
 
@@ -30,7 +31,9 @@ export default function ExitConfirmOverlay({
         <Text style={styles.eyebrow}>PAUSE</Text>
         <Text style={styles.heading}>{heading}</Text>
         <Text style={styles.instructionText}>
-          Your progress is saved automatically — pick up right where you left off, anytime.
+          {saveFailed
+            ? "Your latest moves haven't saved yet — check your connection. Leaving now may lose some progress."
+            : 'Your progress is saved automatically — pick up right where you left off, anytime.'}
         </Text>
         <Pressable
           style={({ pressed }) => [styles.resumeButton, pressed && styles.resumeButtonPressed]}

@@ -7,9 +7,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // email is legacy-only: profiles are readable by every signed-in user, so new
+    // profiles never store it (Firebase Auth already holds it privately).
     function validUser(data, uid) {
       return data.keys().hasAll([
-          'uid', 'username', 'usernameLower', 'email', 'profileImage', 'createdAt', 'partnerIds'
+          'uid', 'username', 'usernameLower', 'profileImage', 'createdAt', 'partnerIds'
         ])
         && data.keys().hasOnly([
           'uid', 'username', 'usernameLower', 'email', 'profileImage', 'createdAt', 'partnerIds'
@@ -19,10 +21,50 @@ service cloud.firestore {
         && data.username.size() > 0
         && data.usernameLower is string
         && data.usernameLower.size() > 0
-        && data.email is string
+        && (!('email' in data) || data.email is string)
         && (data.profileImage == null || data.profileImage is string)
         && data.createdAt is timestamp
         && data.partnerIds is list;
+    }
+
+    // Mirrors USERNAME_PATTERN in src/models/User.js. Only enforced on create so
+    // profiles registered before v1.1 can still be updated.
+    function validNewUsername(data) {
+      return data.username.matches('^[A-Za-z0-9_.]{3,20}$')
+        && data.usernameLower == data.username.lower();
+    }
+
+    function partnerRequestPath(fromUid, toUid) {
+      return /databases/$(database)/documents/partnerRequests/$(fromUid + '_' + toUid);
+    }
+
+    // Partners are appended one at a time, and only once the other player has sent
+    // a request: the recipient adds the sender to their own profile and themselves
+    // to the sender's profile, both backed by the same request document.
+    function acceptsPartnerRequest(uid) {
+      let previous = resource.data.partnerIds;
+      let next = request.resource.data.partnerIds;
+      return next.size() == previous.size() + 1
+        && next.hasAll(previous)
+        && !(next[previous.size()] in previous)
+        && (
+          (request.auth.uid == uid && exists(partnerRequestPath(next[previous.size()], uid)))
+          || (next[previous.size()] == request.auth.uid
+            && exists(partnerRequestPath(uid, request.auth.uid)))
+        );
+    }
+
+    // A player deleting their account removes themselves from each partner's list.
+    function removesSelfAsPartner() {
+      return request.auth.uid in resource.data.partnerIds
+        && request.resource.data.partnerIds
+          == resource.data.partnerIds.removeAll([request.auth.uid]);
+    }
+
+    // Cooperative sessions may only be started with an accepted partner.
+    function isPartnerOfCreator(data) {
+      return data.partnerIds.removeAll([request.auth.uid])[0]
+        in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.partnerIds;
     }
 
     function validCommonSession(data) {
@@ -98,19 +140,51 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.auth.uid == uid
         && validUser(request.resource.data, uid)
+        && !('email' in request.resource.data)
+        && validNewUsername(request.resource.data)
         && request.resource.data.partnerIds.size() == 0
         && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usernameLower)).data.uid == uid;
       allow update: if signedIn()
         && validUser(request.resource.data, uid)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profileImage'])
         && request.auth.uid == uid;
+      // Owners may also drop the legacy email field (the v1.1 privacy migration).
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && validUser(request.resource.data, uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email'])
+        && !('email' in request.resource.data);
       allow update: if signedIn()
         && validUser(request.resource.data, uid)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['partnerIds'])
-        && request.resource.data.partnerIds.hasAll(resource.data.partnerIds)
-        && request.resource.data.partnerIds.size() == resource.data.partnerIds.size() + 1
-        && (request.auth.uid == uid || request.auth.uid in request.resource.data.partnerIds);
+        && (acceptsPartnerRequest(uid) || removesSelfAsPartner());
       allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Requests are keyed "<fromUid>_<toUid>" so each direction exists at most once.
+    // Missing request documents are readable so the accept transaction can check
+    // for a reverse request without failing.
+    match /partnerRequests/{requestId} {
+      allow read: if signedIn()
+        && (resource == null
+          || resource.data.fromUid == request.auth.uid
+          || resource.data.toUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['fromUid', 'toUid', 'fromUsername', 'toUsername', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['fromUid', 'toUid', 'fromUsername', 'toUsername', 'createdAt'])
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid != request.auth.uid
+        && requestId == request.auth.uid + '_' + request.resource.data.toUid
+        && request.resource.data.fromUsername
+          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username
+        && request.resource.data.toUsername
+          == get(/databases/$(database)/documents/users/$(request.resource.data.toUid)).data.username
+        && !(request.resource.data.toUid
+          in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.partnerIds)
+        && request.resource.data.createdAt == request.time;
+      allow delete: if signedIn()
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
     }
 
     match /usernames/{usernameLower} {
@@ -127,12 +201,15 @@ service cloud.firestore {
     match /sessions/{sessionId} {
       allow create: if signedIn()
         && validSession(request.resource.data)
-        && participates(request.resource.data);
+        && participates(request.resource.data)
+        && (request.resource.data.mode == 'solo' || isPartnerOfCreator(request.resource.data));
       allow read, delete: if signedIn() && participates(resource.data);
+      // Ownership fields are fixed at creation so a participant can't reassign a session.
       allow update: if signedIn()
         && participates(resource.data)
-        && participates(request.resource.data)
-        && validSession(request.resource.data);
+        && validSession(request.resource.data)
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['mode', 'userId', 'partnerIds', 'puzzleId', 'createdAt']);
     }
 
     // Gameplay content is readable by signed-in clients but writable only through admin tooling.

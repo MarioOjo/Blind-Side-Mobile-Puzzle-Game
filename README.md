@@ -14,7 +14,20 @@ BlindSide is designed around **connection, not competition**. The core cooperati
 - **Friendship tier** — mid-puzzle, more personal ("What's your go-to comfort food?")
 - **Lover tier** — final pieces, deeper questions ("What song instantly reminds you of me?")
 
+Before starting, the pair picks how deep questions may go. Questions always start at Acquaintance and climb toward the chosen tier in equal stages, so a Lover puzzle moves through all three tiers while an Acquaintance puzzle stays light throughout.
+
 > Note: this cooperative, pass-and-play direction was a deliberate pivot from an earlier competitive "beat their time" concept, made in response to progress-milestone feedback that the original design didn't sufficiently support real-life social connection.
+
+## What's New in v1.1
+
+- **Partner requests** — connecting now takes consent: send a request by username, and the other player accepts (or declines) from their own account.
+- **Escalating questions** — the chosen tier is the deepest level reached; questions build up to it as the puzzle fills.
+- **Delete Account** — available on the Profile tab, confirmed with your password.
+- **Move counter** — shown on the completion screens for solo and cooperative play.
+- **Save warning** — a banner appears if autosave fails, so progress is never silently lost.
+- **Privacy** — email addresses are no longer stored on public profiles or shown in partner search.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list of fixes, security changes, and deployment steps.
 
 ## Tech Stack
 
@@ -98,26 +111,31 @@ Scan the QR code with Expo Go (Android/iOS), or press `a` for Android emulator, 
 1. Create a Firebase project, register a **Web** app (not Android/iOS — this project uses the Firebase JS SDK, which works cross-platform through Expo)
 2. Enable **Email/Password** sign-in under Authentication → Sign-in method
 3. Create a Firestore database
-4. Deploy security rules: `npx firebase deploy --only firestore:rules`
+4. Deploy security rules: `npx firebase deploy --only firestore:rules` (when upgrading from v1.0, deploy these together with the v1.1 app — see [CHANGELOG.md](CHANGELOG.md))
 5. Deploy indexes: `npx firebase deploy --only firestore:indexes`
 6. Seed initial puzzle images and questions: `npm run seed:firestore:production` (requires Application Default Credentials configured — see script for details)
+7. Upgrading from v1.0 only: strip stored emails from existing profiles with `npm run migrate:remove-emails:production` (see `scripts/README.md`)
 
 ## Testing
 
 ```bash
-# Run the full Firestore emulator + unit test suite
+# Unit tests only (no emulator or Java needed)
+npm test
+
+# Full Firestore emulator + unit test suite
 npm run test:firebase
 ```
 
-Covers: authentication flow and registration transaction integrity, Firestore security rules (unauthenticated denial, solo/cooperative session ownership, partner-only access, atomic username reservation), bilateral partner-connection writes, and jigsaw puzzle generation (deterministic piece layout, snap tolerance by difficulty).
+Covers: authentication flow, registration transaction integrity, and username validation; Firestore security rules (unauthenticated denial, solo/cooperative session ownership and locked ownership fields, partner-only cooperative sessions, atomic username reservation, email-free profiles); the partner request flow (send, accept, decline, cancel, and forged-request rejection); account deletion; cooperative turn logic and tier escalation; and jigsaw puzzle generation (deterministic piece layout, snap tolerance by difficulty).
 
 ## Data Model
 
 Firestore collections:
 
-- **`users`** — profile data, `partnerIds` array
-- **`usernames`** — normalized lowercase username reservations (case-insensitive uniqueness)
-- **`sessions`** — unified for both solo and cooperative play; `mode` field distinguishes them. Cooperative sessions carry `partnerIds`, `piecesPlacedTogether`, and `questionsAnswered`
+- **`users`** — public profile data (username, profile image, `partnerIds` array). Readable by any signed-in player for partner search, so it never stores the email address — that stays private in Firebase Auth
+- **`usernames`** — normalized lowercase username reservations (case-insensitive uniqueness); usernames are 3–20 letters, numbers, `_`, or `.`
+- **`partnerRequests`** — pending partner requests keyed `<fromUid>_<toUid>`; readable only by the two players, and removed when accepted, declined, or cancelled
+- **`sessions`** — unified for both solo and cooperative play; `mode` field distinguishes them. Both modes record `movesTaken`; cooperative sessions also carry `partnerIds`, `tier` (the deepest tier reached), `piecesPlacedTogether`, `questionsAnswered`, and `questionsSkipped`
 - **`puzzleImages`** — puzzle image metadata (category, difficulty, image URL)
 - **`questions`** — tiered social-question content
 
@@ -131,6 +149,6 @@ Solo and cooperative sessions share one schema rather than separate tables, sinc
 
 ## Architecture Notes
 
-- **Partner connection uses username search, not invite links** — since cooperative gameplay happens on one shared device between people already physically together, there's no need for async invite/accept infrastructure. Adding a partner is a one-time step; starting a session together requires no invite flow at all.
+- **Partner connection uses username search plus a request/accept step** — v1.0 connected players instantly, but that let anyone link themselves to any account they knew the username of. Since v1.1 the other player must accept from their own account. It's still a one-time step: once connected, starting a session together on the shared device needs no invite at all.
 - **Screens reload-on-focus rather than using live Firestore listeners** — simpler and cheaper for this app's actual needs; nothing requires sub-second real-time sync.
 - **Cooperative session creation is followed by an atomic write, not a preceding read** — an earlier version checked username/session validity via a pre-write read, which correctly failed against security rules requiring authentication. The fix moves validation into the same atomic transaction as the write itself.

@@ -22,6 +22,7 @@ function loadAppModule(relativePath) {
 const { buildQuestionDocument } = loadAppModule('src/models/Question.js');
 const { buildPuzzleImageDocument } = loadAppModule('src/models/PuzzleImage.js');
 const { buildSessionDocument } = loadAppModule('src/models/Session.js');
+const { buildUserDocument, isValidUsername } = loadAppModule('src/models/User.js');
 const { puzzleImages, questions } = require('../scripts/firestore-seed-manifest.cjs');
 const {
   calculateCooperativeStats,
@@ -227,14 +228,46 @@ test('solo session presentation labels by mode and shows placed-piece progress',
 
 test('cooperative statistics use completed sessions and distinct actual partners', () => {
   const stats = calculateCooperativeStats([
-    { partnerIds: ['alice-id', 'bob-id'], status: 'completed', piecesPlacedTogether: 5 },
-    { partnerIds: ['alice-id', 'bob-id'], status: 'inProgress', piecesPlacedTogether: 2 },
-    { partnerIds: ['carol-id', 'alice-id'], status: 'completed', piecesPlacedTogether: 4 },
+    {
+      partnerIds: ['alice-id', 'bob-id'],
+      status: 'completed',
+      piecesPlacedTogether: 5,
+      questionsAnswered: 1,
+      questionsSkipped: 1,
+    },
+    // In-progress question counts are excluded until the puzzle is finished.
+    {
+      partnerIds: ['alice-id', 'bob-id'],
+      status: 'inProgress',
+      piecesPlacedTogether: 2,
+      questionsAnswered: 5,
+      questionsSkipped: 5,
+    },
+    { partnerIds: ['carol-id', 'alice-id'], status: 'completed', piecesPlacedTogether: 4, questionsAnswered: 2 },
   ], 'alice-id');
 
   assert.deepEqual(stats, {
     completedSessions: 2,
     partnersPlayedWith: 2,
     piecesPlacedTogether: 11,
+    questionsAnswered: 3,
+    questionsSkipped: 1,
   });
+});
+
+test('user profiles never store the email address', () => {
+  const profile = buildUserDocument({ uid: 'alice-id', username: ' Alice_01 ' });
+  assert.equal(profile.username, 'Alice_01');
+  assert.equal(profile.usernameLower, 'alice_01');
+  assert.equal('email' in profile, false);
+});
+
+test('usernames must be 3-20 letters, numbers, underscores, or periods', () => {
+  ['abc', 'Alice_01', 'mario.ojo', 'a'.repeat(20)].forEach((name) => {
+    assert.equal(isValidUsername(name), true, name);
+  });
+  ['ab', 'a'.repeat(21), 'has space', 'emoji😀', 'semi;colon', ''].forEach((name) => {
+    assert.equal(isValidUsername(name), false, name);
+  });
+  assert.throws(() => buildUserDocument({ uid: 'alice-id', username: 'no spaces' }));
 });

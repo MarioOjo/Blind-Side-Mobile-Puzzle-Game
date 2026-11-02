@@ -9,6 +9,26 @@
 
 const QUESTION_INTERVAL = 3;
 
+// Relationship tiers from lightest to deepest. The tier a pair picks is the
+// deepest they're comfortable with; questions climb toward it as the puzzle fills.
+export const TIER_ORDER = ['acquaintance', 'friendship', 'lover'];
+
+// Returns the tiers a session can draw from, lightest first, ending at maxTier.
+export function getTiersUpTo(maxTier) {
+  const maxIndex = TIER_ORDER.indexOf(maxTier);
+  return maxIndex === -1 ? [] : TIER_ORDER.slice(0, maxIndex + 1);
+}
+
+// Splits the puzzle into equal stages, one per unlocked tier: with "lover" picked,
+// the first third asks acquaintance questions, the middle third friendship, and the
+// final third lover. Unknown tiers or piece counts fall back to maxTier itself.
+export function getTierForProgress(placedCount, totalPieces, maxTier) {
+  const tiers = getTiersUpTo(maxTier);
+  if (!tiers.length || !totalPieces || totalPieces <= 0) return maxTier;
+  const progress = Math.min(Math.max(placedCount / totalPieces, 0), 1);
+  return tiers[Math.min(Math.floor(progress * tiers.length), tiers.length - 1)];
+}
+
 export function buildTurnState(partnerAName, partnerBName) {
   return {
     partnerNames: [partnerAName, partnerBName],
@@ -17,6 +37,7 @@ export function buildTurnState(partnerAName, partnerBName) {
     turnCount: 0,
     questionPool: [],
     questionPoolOffset: 0,
+    questionPoolKey: null,
     activeQuestion: null,
     questionConfirmedBy: [],
     questionsAnswered: 0,
@@ -35,13 +56,14 @@ export function shufflePool(items) {
 }
 
 // Returns the next question from the pool, reshuffling and cycling when exhausted.
-// `allQuestions` is the full unshuffled list fetched from Firestore.
-function pickNextQuestion(state, allQuestions) {
+// `allQuestions` is the full unshuffled list fetched from Firestore. `poolKey`
+// identifies which list it is (e.g. a tier) so moving to a new tier starts a fresh pool.
+function pickNextQuestion(state, allQuestions, poolKey) {
   if (!allQuestions.length) return { question: null, nextPool: [], nextOffset: 0 };
 
   let { questionPool, questionPoolOffset } = state;
 
-  if (questionPoolOffset >= questionPool.length) {
+  if (questionPoolOffset >= questionPool.length || (state.questionPoolKey ?? null) !== poolKey) {
     questionPool = shufflePool(allQuestions);
     questionPoolOffset = 0;
   }
@@ -57,7 +79,8 @@ function pickNextQuestion(state, allQuestions) {
 // Returns the next full turn state after a correct placement.
 // `allQuestions` — full question list for this tier (may be empty).
 // `isFinalPlacement` — caller must pass true when placedCount + 1 === totalPieces.
-export function recordCorrectPlacement(state, allQuestions, isFinalPlacement) {
+// `poolKey` — optional label for `allQuestions` (the tier); a change reshuffles the pool.
+export function recordCorrectPlacement(state, allQuestions, isFinalPlacement, poolKey = null) {
   const nextPlacedCount = state.placedCount + 1;
   const nextTurnCount = state.turnCount + 1;
   const questionDue = !isFinalPlacement && nextPlacedCount % QUESTION_INTERVAL === 0;
@@ -65,12 +88,14 @@ export function recordCorrectPlacement(state, allQuestions, isFinalPlacement) {
   let activeQuestion = null;
   let nextPool = state.questionPool;
   let nextOffset = state.questionPoolOffset;
+  let nextPoolKey = state.questionPoolKey ?? null;
 
   if (questionDue) {
-    const picked = pickNextQuestion(state, allQuestions);
+    const picked = pickNextQuestion(state, allQuestions, poolKey);
     activeQuestion = picked.question;
     nextPool = picked.nextPool;
     nextOffset = picked.nextOffset;
+    nextPoolKey = poolKey;
   }
 
   return {
@@ -79,6 +104,7 @@ export function recordCorrectPlacement(state, allQuestions, isFinalPlacement) {
     turnCount: nextTurnCount,
     questionPool: nextPool,
     questionPoolOffset: nextOffset,
+    questionPoolKey: nextPoolKey,
     activeQuestion,
     questionConfirmedBy: [],
   };

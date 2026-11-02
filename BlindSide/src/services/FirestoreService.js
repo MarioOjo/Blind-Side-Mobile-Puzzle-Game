@@ -2,6 +2,7 @@
 import {
   addDoc,
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -25,6 +26,7 @@ export const COLLECTIONS = {
   puzzleImages: 'puzzleImages',
   questions: 'questions',
   usernames: 'usernames',
+  partnerRequests: 'partnerRequests',
 };
 
 async function readDocument(collectionName, id) {
@@ -38,6 +40,13 @@ export function createUserProfile(input) {
 
 export function getUserProfile(uid) {
   return readDocument(COLLECTIONS.users, uid);
+}
+
+// Profiles created before v1.1 stored the email, which every signed-in player can
+// read. Owners strip it on their next visit; scripts/remove-profile-emails.cjs
+// cleans up accounts that never sign in again.
+export function removeLegacyProfileEmail(uid) {
+  return updateDoc(doc(db, COLLECTIONS.users, uid), { email: deleteField() });
 }
 
 export async function getUserProfiles(uids) {

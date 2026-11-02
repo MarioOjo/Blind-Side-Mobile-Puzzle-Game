@@ -9,6 +9,7 @@ export const CATEGORY_OPTIONS = [
   { key: 'characters', label: 'Characters', icon: 'rocket-outline' },
   { key: 'people', label: 'People', icon: 'people-outline' },
   { key: 'places', label: 'Places', icon: 'earth-outline' },
+  { key: 'textures', label: 'Textures', icon: 'color-palette-outline' },
 ];
 
 export function normalizeCatalogValue(value) {

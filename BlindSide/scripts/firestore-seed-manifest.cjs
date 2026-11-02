@@ -112,6 +112,62 @@ const puzzleImages = [
     imageURL: 'https://images.unsplash.com/photo-1777745965283-0776c92feb56?auto=format&fit=crop&w=1200&q=85',
     difficultyRecommended: 'hard',
   },
+  {
+    imageId: 'characters-graffiti-monsters',
+    imageName: 'Graffiti Monsters',
+    category: 'characters',
+    imageURL: 'https://images.unsplash.com/photo-1581850518616-bcb8077a2336?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'hard',
+  },
+  {
+    imageId: 'people-holi-festival',
+    imageName: 'Holi Festival',
+    category: 'people',
+    imageURL: 'https://images.unsplash.com/photo-1603228254119-e6a4d095dc59?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'hard',
+  },
+  {
+    imageId: 'people-carnival-dancers',
+    imageName: 'Carnival Dancers',
+    category: 'people',
+    imageURL: 'https://images.unsplash.com/photo-1777104225680-257c7c289f4b?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'hard',
+  },
+  {
+    imageId: 'places-burano',
+    imageName: 'Burano Canal',
+    category: 'places',
+    imageURL: 'https://images.unsplash.com/photo-1502727051360-3656ce291c5b?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'hard',
+  },
+  {
+    imageId: 'places-hot-air-balloons',
+    imageName: 'Hot Air Balloons',
+    category: 'places',
+    imageURL: 'https://images.unsplash.com/photo-1569041032620-2d0ee0b7b673?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'hard',
+  },
+  {
+    imageId: 'textures-autumn-leaves',
+    imageName: 'Autumn Leaves',
+    category: 'textures',
+    imageURL: 'https://images.unsplash.com/photo-1666548462643-be737d452815?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'hard',
+  },
+  {
+    imageId: 'textures-candy-sprinkles',
+    imageName: 'Candy Sprinkles',
+    category: 'textures',
+    imageURL: 'https://images.unsplash.com/photo-1627494106635-41f3669d0e4e?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'hard',
+  },
+  {
+    imageId: 'textures-paint-swirl',
+    imageName: 'Paint Swirl',
+    category: 'textures',
+    imageURL: 'https://images.unsplash.com/photo-1772752021285-27e336543d01?auto=format&fit=crop&w=1200&q=85',
+    difficultyRecommended: 'easy',
+  },
 ];
 
 const questions = [

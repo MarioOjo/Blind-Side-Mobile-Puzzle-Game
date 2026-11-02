@@ -91,9 +91,9 @@ test('question builder accepts only supported relationship tiers', () => {
 });
 
 test('gameplay seed manifest matches puzzle and question schemas', () => {
-  assert.equal(puzzleImages.length, 16);
+  assert.equal(puzzleImages.length, 24);
   assert.equal(questions.length, 60);
-  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 16);
+  assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 24);
   assert.equal(new Set(questions.map(({ questionId }) => questionId)).size, 60);
   assert.equal(new Set(questions.map(({ text }) => text.toLowerCase())).size, 60);
 
@@ -102,20 +102,28 @@ test('gameplay seed manifest matches puzzle and question schemas', () => {
     [
       'characters-astronaut',
       'characters-bird-mural',
+      'characters-graffiti-monsters',
       'characters-mosaic-mural',
       'characters-narwhal',
       'characters-retro-robot',
       'characters-swirly-monster',
+      'people-carnival-dancers',
       'people-colorful-portrait',
       'people-elderly-portrait',
+      'people-holi-festival',
       'people-maya',
       'people-outdoor-portrait',
+      'places-burano',
+      'places-hot-air-balloons',
       'places-machu-picchu',
       'places-marrakech-market',
       'places-santorini',
       'places-venice-canal',
+      'textures-autumn-leaves',
       'textures-brick-wall',
+      'textures-candy-sprinkles',
       'textures-coffee-beans',
+      'textures-paint-swirl',
     ],
   );
   assert.deepEqual(
@@ -139,6 +147,13 @@ test('gameplay seed manifest matches puzzle and question schemas', () => {
   assert.equal(imagesById['people-elderly-portrait'].difficultyRecommended, 'medium');
   assert.equal(imagesById['characters-mosaic-mural'].difficultyRecommended, 'hard');
   assert.equal(imagesById['characters-bird-mural'].difficultyRecommended, 'hard');
+  for (const imageId of [
+    'characters-graffiti-monsters', 'people-holi-festival', 'people-carnival-dancers', 'places-burano',
+    'places-hot-air-balloons', 'textures-autumn-leaves', 'textures-candy-sprinkles',
+  ]) {
+    assert.equal(imagesById[imageId].difficultyRecommended, 'hard');
+  }
+  assert.equal(imagesById['textures-paint-swirl'].difficultyRecommended, 'easy');
   puzzleImages.forEach((image) => {
     assert.deepEqual(buildPuzzleImageDocument(image), image);
     assert.deepEqual(

@@ -17,16 +17,8 @@ function loadAppModule(relativePath) {
   const loadedModule = { exports: {} };
   const nodeRequire = createRequire(filename);
   const testRequire = (request) => {
-    if (request === './puzzleCatalog') {
-      return {
-        CATEGORY_OPTIONS: [
-          { key: 'characters', label: 'Characters', icon: 'rocket-outline' },
-          { key: 'people', label: 'People', icon: 'people-outline' },
-          { key: 'places', label: 'Places', icon: 'earth-outline' },
-        ],
-        normalizeCatalogValue: (value) => typeof value === 'string' ? value.trim().toLowerCase() : '',
-      };
-    }
+    // Load the real catalog so category changes are covered here too.
+    if (request === './puzzleCatalog') return loadAppModule('src/utils/puzzleCatalog.js');
     return nodeRequire(request);
   };
   const execute = new Function('require', 'module', 'exports', '__filename', '__dirname', code);
@@ -50,23 +42,36 @@ test('cooperative tiers and fixed Hard category counts are deterministic', () =>
   assert.deepEqual(
     getCooperativeCategories(puzzleImages).map(({ key, count }) => ({ key, count })),
     [
-      { key: 'characters', count: 2 },
-      { key: 'people', count: 1 },
-      { key: 'places', count: 1 },
+      { key: 'characters', count: 3 },
+      { key: 'people', count: 3 },
+      { key: 'places', count: 3 },
+      { key: 'textures', count: 3 },
     ],
   );
 });
 
 test('cooperative catalog includes only Hard puzzles in fixed real categories', () => {
   assert.deepEqual(getCooperativePuzzles(puzzleImages).map(({ imageId }) => imageId), [
+    'textures-autumn-leaves',
+    'places-burano',
+    'textures-candy-sprinkles',
+    'people-carnival-dancers',
     'characters-bird-mural',
+    'textures-coffee-beans',
     'characters-mosaic-mural',
+    'characters-graffiti-monsters',
+    'people-holi-festival',
+    'places-hot-air-balloons',
     'places-marrakech-market',
     'people-colorful-portrait',
   ]);
   assert.deepEqual(getCooperativePuzzles([null, {}, ...puzzleImages], 'people')
-    .map(({ imageId }) => imageId), ['people-colorful-portrait']);
-  assert.deepEqual(getCooperativePuzzles(puzzleImages, 'textures'), []);
+    .map(({ imageId }) => imageId), [
+    'people-carnival-dancers',
+    'people-holi-festival',
+    'people-colorful-portrait',
+  ]);
+  assert.deepEqual(getCooperativePuzzles(puzzleImages, 'unknown'), []);
 });
 
 test('cooperative routing preserves context for empty, single, and multiple matches', () => {
@@ -80,7 +85,11 @@ test('cooperative routing preserves context for empty, single, and multiple matc
     screen: 'CooperativePuzzleSelection',
     params: { ...context, category: 'characters' },
   });
-  assert.deepEqual(getCooperativeCategoryRoute(puzzleImages, context, 'people'), {
+  // A category with one Hard puzzle skips the picker and opens it directly.
+  const singlePeople = puzzleImages.filter(({ imageId }) => (
+    !['people-holi-festival', 'people-carnival-dancers'].includes(imageId)
+  ));
+  assert.deepEqual(getCooperativeCategoryRoute(singlePeople, context, 'people'), {
     screen: 'Puzzle',
     params: { ...context, category: 'people', puzzleId: 'people-colorful-portrait' },
   });
@@ -90,7 +99,7 @@ test('cooperative routing preserves context for empty, single, and multiple matc
     imageId: 'people-colorful-portrait-two',
     imageName: 'Portrait Two',
   };
-  assert.deepEqual(getCooperativeCategoryRoute([...puzzleImages, duplicate], context, 'people'), {
+  assert.deepEqual(getCooperativeCategoryRoute([...singlePeople, duplicate], context, 'people'), {
     screen: 'CooperativePuzzleSelection',
     params: { ...context, category: 'people' },
   });

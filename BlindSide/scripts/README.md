@@ -31,7 +31,18 @@ npm run seed:firestore:production
 
 The script also accepts `--project=PROJECT_ID` when invoked directly with Node. Environment variables are recommended for npm 11 because npm reserves some command-line flags.
 
-Never commit service-account keys or other credentials. The direct Unsplash image URLs are suitable for development and demos, but should move to Firebase Storage or an owned CDN before the assets become a production dependency.
+Never commit service-account keys or other credentials.
+
+## Puzzle images and Firebase Storage
+
+Each puzzle in `firestore-seed-manifest.cjs` lists its **source** Unsplash URL. When seeding production, the script downloads each image and uploads it to the project's Storage bucket at `puzzleImages/<imageId>.jpg`, then writes that copy's download URL to Firestore. Players never load images from Unsplash directly, so a photo removed there can't break a puzzle.
+
+- Re-seeding reuses files whose source URL hasn't changed, so download URLs stay stable. Change a puzzle's `imageURL` in the manifest to replace its image.
+- The bucket defaults to `<projectId>.firebasestorage.app`; override it with `$env:FIREBASE_STORAGE_BUCKET`.
+- Storage must be enabled in the Firebase console (Blaze plan) and `storage.rules` deployed: `npx firebase deploy --only storage`.
+- Against the emulators, images are mirrored only when the Storage emulator is running (`FIREBASE_STORAGE_EMULATOR_HOST` is set, as `firebase emulators:exec --only firestore,storage` does). Otherwise documents keep their Unsplash URLs.
+
+To add a puzzle: find a free (not Unsplash+) photo on Unsplash, open `https://unsplash.com/photos/<id>/download` to get its `https://images.unsplash.com/photo-…` address, add an entry to the manifest, and update the image count in `validateManifest` and the tests.
 
 # v1.1 privacy migration: remove stored emails
 

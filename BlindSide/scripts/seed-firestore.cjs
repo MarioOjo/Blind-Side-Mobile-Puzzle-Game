@@ -1,8 +1,11 @@
-// Validates seed content and writes it atomically to an emulator or an explicit production target.
+// Validates seed content, mirrors puzzle art into Firebase Storage, and writes Firestore
+// atomically to an emulator or an explicit production target.
+const { randomUUID } = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { applicationDefault, deleteApp, initializeApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
+const { getStorage } = require('firebase-admin/storage');
 const { puzzleImages, questions } = require('./firestore-seed-manifest.cjs');
 
 function parseArguments(args) {
@@ -36,8 +39,8 @@ function getFirebaseRcProject() {
 }
 
 function validateManifest() {
-  if (puzzleImages.length !== 16 || questions.length !== 60) {
-    throw new Error('Expected 16 puzzle images and 60 questions.');
+  if (puzzleImages.length !== 24 || questions.length !== 60) {
+    throw new Error('Expected 24 puzzle images and 60 questions.');
   }
 
   const imageIds = new Set();
@@ -103,6 +106,48 @@ function validateManifest() {
   }
 }
 
+const STORAGE_FOLDER = 'puzzleImages';
+
+function getDownloadUrl(bucketName, filePath, token) {
+  const origin = process.env.FIREBASE_STORAGE_EMULATOR_HOST
+    ? `http://${process.env.FIREBASE_STORAGE_EMULATOR_HOST}`
+    : 'https://firebasestorage.googleapis.com';
+  return `${origin}/v0/b/${bucketName}/o/${encodeURIComponent(filePath)}?alt=media&token=${token}`;
+}
+
+// The manifest's Unsplash URL is the source; players load our Storage copy so a photo
+// removed from Unsplash can't break a puzzle. Files whose source is unchanged are reused,
+// which keeps their download URLs stable across re-seeds.
+async function mirrorPuzzleImage(bucket, image) {
+  const file = bucket.file(`${STORAGE_FOLDER}/${image.imageId}.jpg`);
+  const [exists] = await file.exists();
+  if (exists) {
+    const [{ metadata = {} }] = await file.getMetadata();
+    const token = metadata.firebaseStorageDownloadTokens?.split(',')[0];
+    if (token && metadata.sourceURL === image.imageURL) {
+      return { url: getDownloadUrl(bucket.name, file.name, token), uploaded: false };
+    }
+  }
+
+  const sourceUrl = new URL(image.imageURL);
+  sourceUrl.searchParams.delete('auto');
+  sourceUrl.searchParams.set('fm', 'jpg');
+  const response = await fetch(sourceUrl);
+  if (!response.ok || !response.headers.get('content-type')?.startsWith('image/jpeg')) {
+    throw new Error(`Could not download ${image.imageId} from Unsplash (HTTP ${response.status}).`);
+  }
+
+  const token = randomUUID();
+  await file.save(Buffer.from(await response.arrayBuffer()), {
+    contentType: 'image/jpeg',
+    metadata: {
+      cacheControl: 'public, max-age=31536000',
+      metadata: { firebaseStorageDownloadTokens: token, sourceURL: image.imageURL },
+    },
+  });
+  return { url: getDownloadUrl(bucket.name, file.name, token), uploaded: true };
+}
+
 async function seedFirestore() {
   const options = parseArguments(process.argv.slice(2));
   validateManifest();
@@ -121,9 +166,15 @@ async function seedFirestore() {
     return;
   }
 
+  // Production always mirrors images. Emulator runs mirror only when the Storage
+  // emulator is configured; otherwise documents keep the Unsplash source URLs.
+  const mirrorImages = options.production || Boolean(process.env.FIREBASE_STORAGE_EMULATOR_HOST);
   if (!options.production) {
     process.env.FIRESTORE_EMULATOR_HOST ||= '127.0.0.1:8080';
     console.log(`[seed] Firestore emulator: ${process.env.FIRESTORE_EMULATOR_HOST}`);
+    console.log(mirrorImages
+      ? `[seed] Storage emulator: ${process.env.FIREBASE_STORAGE_EMULATOR_HOST}`
+      : '[seed] Storage emulator not set; puzzle images keep their Unsplash URLs.');
   } else {
     console.warn('[seed] Production mode explicitly enabled; using Application Default Credentials.');
   }
@@ -131,15 +182,34 @@ async function seedFirestore() {
   const credential = options.production ? applicationDefault() : null;
   if (credential) await credential.getAccessToken();
 
+  const storageBucket = process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.firebasestorage.app`;
   const app = initializeApp({
     projectId,
+    storageBucket,
     ...(credential ? { credential } : {}),
   }, `blindside-seed-${Date.now()}`);
 
   try {
+    const documents = [...puzzleImages];
+    if (mirrorImages) {
+      const bucket = getStorage(app).bucket();
+      // The Storage emulator creates buckets on first write, so only production is checked.
+      const [bucketExists] = options.production ? await bucket.exists() : [true];
+      if (!bucketExists) {
+        throw new Error(`Storage bucket ${storageBucket} not found. Enable Storage in the Firebase console first.`);
+      }
+      let uploadedCount = 0;
+      for (let index = 0; index < documents.length; index += 1) {
+        const { url, uploaded } = await mirrorPuzzleImage(bucket, documents[index]);
+        documents[index] = { ...documents[index], imageURL: url };
+        if (uploaded) uploadedCount += 1;
+      }
+      console.log(`[seed] Storage: uploaded ${uploadedCount}, reused ${documents.length - uploadedCount} puzzle images.`);
+    }
+
     const firestore = getFirestore(app);
     const batch = firestore.batch();
-    for (const image of puzzleImages) {
+    for (const image of documents) {
       batch.set(firestore.collection('puzzleImages').doc(image.imageId), image, { merge: false });
     }
     for (const question of questions) {

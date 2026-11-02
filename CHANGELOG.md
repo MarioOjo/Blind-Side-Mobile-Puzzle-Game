@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.2.0 — More puzzles, Textures, and self-hosted images
+
+- **8 new puzzle images (24 total, up from 16).** Cooperative play only uses Hard puzzles, and some categories had just one, so the picker was skipped and the same puzzle came up every time. Every category now has 3 Hard puzzles (12 cooperative puzzles, up from 4).
+  - Characters: Graffiti Monsters
+  - People: Holi Festival, Carnival Dancers
+  - Places: Burano Canal, Hot Air Balloons
+  - Textures: Autumn Leaves, Candy Sprinkles (Hard), Paint Swirl (Easy)
+- **Textures is now a selectable category.** It was a valid category in the data, but the app only offered Characters, People, and Places, so the existing Brick Wall and Coffee Beans puzzles could never be played. It now appears in solo (Easy, Medium, and Hard) and cooperative play.
+- **Puzzle images are served from Firebase Storage.** Images are still sourced from Unsplash (free licence), but the seed script now copies each one into the project's Storage bucket (`puzzleImages/<imageId>.jpg`) and stores that URL in Firestore. Unchanged images are reused on re-seed, so URLs stay stable.
+- New `storage.rules`: signed-in players can read puzzle images; nobody can write from the app.
+- The Storage emulator is now configured (port 9199), and seed verification checks that images are served from Storage when it runs.
+- The cooperative catalog test now loads the real category list instead of its own copy, which had silently gone stale.
+- Result: **80 / 80 passing** under `npm run test:firebase`.
+
+### Deploying v1.2
+
+1. Enable Storage in the Firebase console (Build → Storage → Get started; Blaze plan).
+2. `npx firebase deploy --only storage`
+3. `npm run seed:firestore:production` (uploads the 24 images and points Firestore at them).
+4. Ship the app update. Older builds keep working: they read the same `imageURL` field, but won't show the Textures category.
+
 ## v1.1.1 — Expanded question pool
 
 - **60 conversation questions, up from 15** (20 per tier). With v1.1's escalating tiers, a 48-piece cooperative puzzle asks about 15 questions, and the old pool of 5 per tier repeated questions within a single game: 3 repeats when going up to Friendship, and every question three times on Acquaintance. Every tier choice now gets a full game with no repeats.

@@ -36,8 +36,8 @@ function getFirebaseRcProject() {
 }
 
 function validateManifest() {
-  if (puzzleImages.length !== 16 || questions.length !== 15) {
-    throw new Error('Expected 16 puzzle images and 15 questions.');
+  if (puzzleImages.length !== 16 || questions.length !== 60) {
+    throw new Error('Expected 16 puzzle images and 60 questions.');
   }
 
   const imageIds = new Set();
@@ -96,8 +96,10 @@ function validateManifest() {
     tierCounts[question.tier] += 1;
   }
 
-  if (Object.values(tierCounts).some((count) => count !== 5)) {
-    throw new Error('Each question tier must contain exactly five questions.');
+  // 20 per tier keeps a full 48-piece cooperative puzzle (~15 questions) free of
+  // repeats for every tier choice — see the cooperative.turn coverage test.
+  if (Object.values(tierCounts).some((count) => count !== 20)) {
+    throw new Error('Each question tier must contain exactly 20 questions.');
   }
 }
 

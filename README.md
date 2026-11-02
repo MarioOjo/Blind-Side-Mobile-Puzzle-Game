@@ -21,7 +21,7 @@ Before starting, the pair picks how deep questions may go. Questions always star
 ## What's New in v1.1
 
 - **Partner requests** — connecting now takes consent: send a request by username, and the other player accepts (or declines) from their own account.
-- **Escalating questions** — the chosen tier is the deepest level reached; questions build up to it as the puzzle fills.
+- **Escalating questions** — the chosen tier is the deepest level reached; questions build up to it as the puzzle fills. Each tier has 20 questions (60 in total), so no question repeats within a game (v1.1.1).
 - **Delete Account** — available on the Profile tab, confirmed with your password.
 - **Move counter** — shown on the completion screens for solo and cooperative play.
 - **Save warning** — a banner appears if autosave fails, so progress is never silently lost.

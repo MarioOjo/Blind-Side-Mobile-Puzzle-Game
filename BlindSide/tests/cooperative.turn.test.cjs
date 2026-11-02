@@ -352,3 +352,23 @@ test('changing the pool key starts a fresh pool from the new tier', () => {
   assert.equal(state.questionPoolKey, 'lover');
   assert.equal(state.questionPoolOffset, 1);
 });
+
+test('the seeded question pool never repeats a question within one 48-piece cooperative puzzle', () => {
+  const { questions } = require('../scripts/firestore-seed-manifest.cjs');
+  const totalPieces = 48;
+
+  ['acquaintance', 'friendship', 'lover'].forEach((maxTier) => {
+    // Mirrors PuzzleScreen: tier chosen from progress, final piece never asks.
+    let state = buildTurnState('Alice', 'Bob');
+    const asked = [];
+    for (let placed = 1; placed <= totalPieces; placed += 1) {
+      const tier = getTierForProgress(placed, totalPieces, maxTier);
+      const pool = questions.filter((question) => question.tier === tier);
+      state = recordCorrectPlacement(state, pool, placed === totalPieces, tier);
+      if (state.activeQuestion) asked.push(state.activeQuestion.questionId);
+      state = advancePlayer(state);
+    }
+    assert.ok(asked.length >= 15, maxTier);
+    assert.equal(new Set(asked).size, asked.length, `${maxTier} repeated a question`);
+  });
+});

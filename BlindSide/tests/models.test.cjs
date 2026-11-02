@@ -92,9 +92,10 @@ test('question builder accepts only supported relationship tiers', () => {
 
 test('gameplay seed manifest matches puzzle and question schemas', () => {
   assert.equal(puzzleImages.length, 16);
-  assert.equal(questions.length, 15);
+  assert.equal(questions.length, 60);
   assert.equal(new Set(puzzleImages.map(({ imageId }) => imageId)).size, 16);
-  assert.equal(new Set(questions.map(({ questionId }) => questionId)).size, 15);
+  assert.equal(new Set(questions.map(({ questionId }) => questionId)).size, 60);
+  assert.equal(new Set(questions.map(({ text }) => text.toLowerCase())).size, 60);
 
   assert.deepEqual(
     puzzleImages.map(({ imageId }) => imageId).sort(),
@@ -157,7 +158,7 @@ test('gameplay seed manifest matches puzzle and question schemas', () => {
     ...counts,
     [question.tier]: (counts[question.tier] ?? 0) + 1,
   }), {});
-  assert.deepEqual(tierCounts, { acquaintance: 5, friendship: 5, lover: 5 });
+  assert.deepEqual(tierCounts, { acquaintance: 20, friendship: 20, lover: 20 });
   questions.forEach((question) => {
     assert.deepEqual(buildQuestionDocument(question), question);
     assert.deepEqual(Object.keys(question).sort(), ['questionId', 'text', 'tier']);

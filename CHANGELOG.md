@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.1.1 — Expanded question pool
+
+- **60 conversation questions, up from 15** (20 per tier). With v1.1's escalating tiers, a 48-piece cooperative puzzle asks about 15 questions, and the old pool of 5 per tier repeated questions within a single game: 3 repeats when going up to Friendship, and every question three times on Acquaintance. Every tier choice now gets a full game with no repeats.
+- New test (`cooperative.turn.test.cjs`) plays a whole 48-piece puzzle for each tier choice and fails if any question repeats, so future content edits can't bring the problem back.
+- Seed validation now expects 20 questions per tier (`scripts/seed-firestore.cjs`).
+- **Deploying:** run `npm run seed:firestore:production` to load the new questions. No rules or app-code changes are needed. The seed only adds or overwrites question and puzzle documents.
+
 ## v1.1.0 — Privacy, consent, and gameplay fixes
 
 A review pass over the v1.0 build. Version bumped to `1.1.0` in `package.json`, `package-lock.json`, and `app.json`.

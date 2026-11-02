@@ -1,0 +1,46 @@
+# EAS Build uploads files using this list instead of .gitignore.
+# It mirrors .gitignore except that .env is included, so the build gets the
+# EXPO_PUBLIC_FIREBASE_* values. .env itself stays out of git.
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# macOS
+.DS_Store
+*.pem
+
+# environment variables (.env is deliberately uploaded to EAS, see top)
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android

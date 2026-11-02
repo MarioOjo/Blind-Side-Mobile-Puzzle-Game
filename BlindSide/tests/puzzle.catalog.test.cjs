@@ -31,8 +31,8 @@ test('fixed difficulties and categories remain visible with real counts', () => 
   assert.deepEqual(
     getAvailableDifficulties(puzzleImages).map(({ key, count }) => ({ key, count })),
     [
-      { key: 'easy', count: 6 },
-      { key: 'medium', count: 6 },
+      { key: 'easy', count: 12 },
+      { key: 'medium', count: 12 },
       { key: 'hard', count: 12 },
     ],
   );
@@ -40,18 +40,18 @@ test('fixed difficulties and categories remain visible with real counts', () => 
     getAvailableCategories(puzzleImages, 'easy').map(({ key, count }) => ({ key, count })),
     [
       { key: 'characters', count: 3 },
-      { key: 'people', count: 1 },
-      { key: 'places', count: 1 },
-      { key: 'textures', count: 1 },
+      { key: 'people', count: 3 },
+      { key: 'places', count: 3 },
+      { key: 'textures', count: 3 },
     ],
   );
   assert.deepEqual(
     getAvailableCategories(puzzleImages, 'medium').map(({ key, count }) => ({ key, count })),
     [
-      { key: 'characters', count: 1 },
-      { key: 'people', count: 2 },
-      { key: 'places', count: 2 },
-      { key: 'textures', count: 1 },
+      { key: 'characters', count: 3 },
+      { key: 'people', count: 3 },
+      { key: 'places', count: 3 },
+      { key: 'textures', count: 3 },
     ],
   );
   assert.deepEqual(
@@ -69,7 +69,7 @@ test('catalog filtering is normalized, deterministic, and safe for malformed inp
   assert.deepEqual(
     getPuzzlesForSelection(puzzleImages, { difficulty: ' EASY ', category: 'PLACES' })
       .map(({ imageId }) => imageId),
-    ['places-santorini'],
+    ['places-bo-kaap', 'places-santorini', 'places-table-mountain'],
   );
   assert.deepEqual(
     getAvailableDifficulties([]).map(({ key, count }) => ({ key, count })),
@@ -113,20 +113,23 @@ test('category routing shows empty state and preserves populated branches', () =
     params: { difficulty: 'easy', category: 'textures' },
   });
   assert.deepEqual(getCategoryRoute(puzzleImages, 'easy', 'textures'), {
-    screen: 'Puzzle',
-    params: { puzzleId: 'textures-paint-swirl' },
+    screen: 'PuzzleSelection',
+    params: { difficulty: 'easy', category: 'textures' },
   });
-  assert.deepEqual(getCategoryRoute(puzzleImages, 'easy', 'places'), {
+
+  // A category with one puzzle skips the picker and opens it directly.
+  const santorini = puzzleImages.find(({ imageId }) => imageId === 'places-santorini');
+  assert.deepEqual(getCategoryRoute([santorini], 'easy', 'places'), {
     screen: 'Puzzle',
     params: { puzzleId: 'places-santorini' },
   });
 
   const duplicateTexture = {
-    ...puzzleImages.find(({ imageId }) => imageId === 'places-santorini'),
+    ...santorini,
     imageId: 'places-santorini-two',
     imageName: 'Santorini Two',
   };
-  assert.deepEqual(getCategoryRoute([...puzzleImages, duplicateTexture], 'easy', 'places'), {
+  assert.deepEqual(getCategoryRoute([santorini, duplicateTexture], 'easy', 'places'), {
     screen: 'PuzzleSelection',
     params: { difficulty: 'easy', category: 'places' },
   });

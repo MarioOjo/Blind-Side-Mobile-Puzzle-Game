@@ -18,6 +18,11 @@ Before starting, the pair picks how deep questions may go. Questions always star
 
 > Note: this cooperative, pass-and-play direction was a deliberate pivot from an earlier competitive "beat their time" concept, made in response to progress-milestone feedback that the original design didn't sufficiently support real-life social connection.
 
+## What's New in v1.3
+
+- **36 puzzles** — 3 in every category at every difficulty, including new Cape Town scenes (Bo-Kaap, Table Mountain, Lion's Head).
+- **Android APK** — BlindSide can now be installed directly on Android, without Expo Go. See [Building the Android APK](#building-the-android-apk).
+
 ## What's New in v1.2
 
 - **24 puzzles, up from 16** — 8 new images, so every cooperative category now has 3 puzzles to choose from.
@@ -111,6 +116,19 @@ npx expo start -c
 Scan the QR code with Expo Go (Android/iOS), or press `a` for Android emulator, `i` for iOS simulator.
 
 **Web is not a supported platform** — several native-only dependencies (Firebase Auth persistence, SVG rendering paths) are not web-compatible, and web has never been part of this project's target platforms.
+
+## Building the Android APK
+
+Builds run in the cloud on EAS Build with a free [Expo account](https://expo.dev/signup).
+
+```bash
+npx eas-cli login          # once per machine
+npm run build:apk          # ~10–20 minutes; first run asks to create the EAS project and a signing keystore (say yes)
+```
+
+When it finishes, EAS prints a link to the build page. Open it on an Android phone to download and install the APK (Android will ask to allow installs from that source). Share the same link with testers.
+
+The build reads Firebase settings from `.env`, which `.easignore` uploads to EAS even though git ignores it.
 
 ## Firebase Setup (for a fresh clone)
 

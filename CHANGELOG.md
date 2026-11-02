@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.3.0 — Full puzzle catalog and Android APK
+
+- **12 new puzzle images (36 total).** Every category now has 3 puzzles at every difficulty. Several Easy and Medium categories had a single puzzle, so tapping them jumped straight into the same image every time.
+  - Easy: Bright Smile, Knitted Beanie (People); Bo-Kaap Colours, Table Mountain Sunset (Places); Rainbow Pencils, Citrus Slices (Textures)
+  - Medium: Tin Robot, Nesting Dolls (Characters); Fabric Market (People); Lion's Head Cable Car (Places); Beach Pebbles, Yarn Wall (Textures)
+- **Installable Android build.** New `eas.json` with a `preview` profile that produces an APK through EAS Build (`npm run build:apk`). The Android package is `com.marioojo.blindside`.
+- New `.easignore` so EAS Build receives `.env` (the Firebase config) while it stays out of git.
+- Catalog tests updated for 3 puzzles per category; single-puzzle routing is now tested with a filtered catalog.
+
+### Deploying v1.3
+
+1. `npm run seed:firestore:production` (uploads the 12 new images; the existing 24 are reused).
+2. `npm run build:apk` and share the APK link from the EAS dashboard.
+
 ## v1.2.0 — More puzzles, Textures, and self-hosted images
 
 - **8 new puzzle images (24 total, up from 16).** Cooperative play only uses Hard puzzles, and some categories had just one, so the picker was skipped and the same puzzle came up every time. Every category now has 3 Hard puzzles (12 cooperative puzzles, up from 4).

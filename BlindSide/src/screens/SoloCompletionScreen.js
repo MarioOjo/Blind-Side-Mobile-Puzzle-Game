@@ -57,6 +57,7 @@ export default function SoloCompletionScreen({ navigation, route }) {
 
         <View style={styles.statsRow}>
           <Stat label="Time" value={formatElapsedTime(results.completionTime)} />
+          <Stat label="Moves" value={String(results.movesTaken ?? 0)} />
           <Stat label="Difficulty" value={humanizeCatalogValue(results.difficulty)} />
           <Stat label="Category" value={humanizeCatalogValue(results.category)} />
         </View>

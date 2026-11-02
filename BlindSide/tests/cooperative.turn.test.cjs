@@ -24,6 +24,8 @@ const {
   advancePlayer,
   buildTurnState,
   confirmQuestion,
+  getTierForProgress,
+  getTiersUpTo,
   isQuestionFullyConfirmed,
   recordCorrectPlacement,
   shufflePool,
@@ -46,6 +48,7 @@ test('buildTurnState produces correct initial shape for both players', () => {
     turnCount: 0,
     questionPool: [],
     questionPoolOffset: 0,
+    questionPoolKey: null,
     activeQuestion: null,
     questionConfirmedBy: [],
     questionsAnswered: 0,
@@ -308,4 +311,44 @@ test('turn 1 and subsequent turns are symmetric: buildTurnState starts at player
   // After her placement, advancePlayer is called — Bob becomes current for 'confirming'.
   const afterAdvance = advancePlayer(state);
   assert.equal(afterAdvance.currentPlayerIndex, 1);
+});
+
+test('getTiersUpTo unlocks tiers from lightest up to the chosen one', () => {
+  assert.deepEqual(getTiersUpTo('acquaintance'), ['acquaintance']);
+  assert.deepEqual(getTiersUpTo('friendship'), ['acquaintance', 'friendship']);
+  assert.deepEqual(getTiersUpTo('lover'), ['acquaintance', 'friendship', 'lover']);
+  assert.deepEqual(getTiersUpTo('unknown'), []);
+});
+
+test('getTierForProgress escalates in equal stages toward the chosen tier', () => {
+  // Lover: thirds of a 30-piece puzzle.
+  assert.equal(getTierForProgress(3, 30, 'lover'), 'acquaintance');
+  assert.equal(getTierForProgress(9, 30, 'lover'), 'acquaintance');
+  assert.equal(getTierForProgress(10, 30, 'lover'), 'friendship');
+  assert.equal(getTierForProgress(19, 30, 'lover'), 'friendship');
+  assert.equal(getTierForProgress(20, 30, 'lover'), 'lover');
+  assert.equal(getTierForProgress(30, 30, 'lover'), 'lover');
+  // Friendship: halves.
+  assert.equal(getTierForProgress(14, 30, 'friendship'), 'acquaintance');
+  assert.equal(getTierForProgress(15, 30, 'friendship'), 'friendship');
+  // Acquaintance never escalates.
+  assert.equal(getTierForProgress(29, 30, 'acquaintance'), 'acquaintance');
+  // Unknown piece count falls back to the chosen tier.
+  assert.equal(getTierForProgress(3, null, 'lover'), 'lover');
+});
+
+test('changing the pool key starts a fresh pool from the new tier', () => {
+  const light = [{ id: 'a1', text: 'Light' }];
+  const deep = [{ id: 'l1', text: 'Deep' }, { id: 'l2', text: 'Deeper' }];
+  let state = buildTurnState('Alice', 'Bob');
+  state = { ...state, placedCount: 2 };
+  state = recordCorrectPlacement(state, light, false, 'acquaintance');
+  assert.equal(state.activeQuestion.id, 'a1');
+  assert.equal(state.questionPoolKey, 'acquaintance');
+
+  state = advancePlayer({ ...state, placedCount: 5 });
+  state = recordCorrectPlacement(state, deep, false, 'lover');
+  assert.ok(['l1', 'l2'].includes(state.activeQuestion.id));
+  assert.equal(state.questionPoolKey, 'lover');
+  assert.equal(state.questionPoolOffset, 1);
 });

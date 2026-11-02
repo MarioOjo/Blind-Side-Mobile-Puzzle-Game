@@ -74,6 +74,8 @@ export default function JigsawBoard({
   onFirstInteraction = () => {},
   onComplete,
   onSettle,
+  // Called once per finished drag, whether or not the piece snapped into place.
+  onMove,
   onImageError,
   // Piece IDs to pre-mark as placed on mount (e.g. resuming a cooperative
   // session). Piece IDs are deterministic from puzzle + difficulty, so these
@@ -196,6 +198,7 @@ export default function JigsawBoard({
 
   const handleSettle = (pieceId, placed) => {
     setIsDragging(false);
+    onMove?.(pieceId, placed);
     if (!placed) return;
     setPlacedIds((current) => new Set(current).add(pieceId));
     onSettle?.(pieceId);

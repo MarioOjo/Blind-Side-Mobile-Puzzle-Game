@@ -1,10 +1,19 @@
-// Lets a signed-in user find an exact username and create a mutual partner connection.
-import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+// Lets a signed-in user find an exact username, send partner requests, and answer requests sent to them.
+import { useCallback, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
 import { auth } from '../services/FirebaseConfig';
-import { addPartner, searchUserByUsername } from '../services/PartnerService';
+import {
+  acceptPartnerRequest,
+  deletePartnerRequest,
+  getIncomingPartnerRequests,
+  getOutgoingPartnerRequests,
+  getPartnerRequestStatus,
+  searchUserByUsername,
+  sendPartnerRequest,
+} from '../services/PartnerService';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 
@@ -14,74 +23,193 @@ const PARTNER_ERROR_MESSAGES = {
   'partner/user-not-found': 'That player profile is no longer available.',
   'partner/already-connected': 'You are already connected with this player.',
   'partner/inconsistent-connection': 'This partnership needs support before it can be changed.',
+  'partner/request-not-found': 'That request is no longer available.',
 };
 
 function getPartnerErrorMessage(error) {
   return PARTNER_ERROR_MESSAGES[error?.code] ?? 'Unable to connect right now. Please try again.';
 }
 
+function Avatar({ username }) {
+  return (
+    <View style={styles.avatar}>
+      <Text style={styles.avatarText}>{username.slice(0, 1).toUpperCase()}</Text>
+    </View>
+  );
+}
+
 export default function PartnerConnectionScreen({ currentUser, navigation } = {}) {
   const signedInUser = currentUser === undefined ? auth.currentUser : currentUser;
   const [username, setUsername] = useState('');
   const [searchResult, setSearchResult] = useState(null);
+  // 'incoming' | 'outgoing' | null for the searched player.
+  const [searchRequestStatus, setSearchRequestStatus] = useState(null);
   const [message, setMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
+  const [busyRequestId, setBusyRequestId] = useState(null);
+  const [incomingRequests, setIncomingRequests] = useState([]);
+  const [outgoingRequests, setOutgoingRequests] = useState([]);
+
+  const showMessage = (text, success = false) => {
+    setMessage(text);
+    setIsSuccess(success);
+  };
+
+  const loadRequests = useCallback(async () => {
+    if (!signedInUser) return;
+    try {
+      const [incoming, outgoing] = await Promise.all([
+        getIncomingPartnerRequests(signedInUser.uid),
+        getOutgoingPartnerRequests(signedInUser.uid),
+      ]);
+      setIncomingRequests(incoming);
+      setOutgoingRequests(outgoing);
+    } catch (error) {
+      showMessage('Unable to load partner requests right now.');
+    }
+  }, [signedInUser]);
+
+  useFocusEffect(useCallback(() => {
+    loadRequests();
+  }, [loadRequests]));
 
   const handleSearch = async () => {
     if (!signedInUser) {
-      setMessage('Sign in before searching for a partner.');
+      showMessage('Sign in before searching for a partner.');
       return;
     }
 
     setSearchResult(null);
-    setMessage('');
-    setIsConnected(false);
+    setSearchRequestStatus(null);
+    showMessage('');
     setIsSearching(true);
 
     try {
       const result = await searchUserByUsername(username, signedInUser.uid);
       if (!result) {
-        setMessage('No player found with that exact username.');
+        showMessage('No player found with that exact username.');
       } else {
         setSearchResult(result);
-        if (result.partnerIds?.includes(signedInUser.uid)) {
-          setMessage('You are already connected with this player.');
+        if (result.partnerIds.includes(signedInUser.uid)) {
+          showMessage('You are already connected with this player.');
+        } else {
+          setSearchRequestStatus(await getPartnerRequestStatus(signedInUser.uid, result.id));
         }
       }
     } catch (error) {
-      setMessage(getPartnerErrorMessage(error));
+      showMessage(getPartnerErrorMessage(error));
     } finally {
       setIsSearching(false);
     }
   };
 
-  const handleAddPartner = async () => {
-    setMessage('');
-    setIsConnecting(true);
+  const goToTierSelection = (partnerId, partnerName) => {
+    navigation?.push('CooperativeTierSelection', { partnerId, partnerName });
+  };
+
+  const handleAccept = async (fromUid, fromUsername) => {
+    setBusyRequestId(fromUid);
+    showMessage('');
 
     try {
-      await addPartner(signedInUser.uid, searchResult.id);
-      setIsConnected(true);
-      setMessage(`You and ${searchResult.username} are now partners.`);
-      navigation?.push('CooperativeTierSelection', {
-        partnerId: searchResult.id,
-        partnerName: searchResult.username,
-      });
+      await acceptPartnerRequest(signedInUser.uid, fromUid);
+      showMessage(`You and ${fromUsername} are now partners.`, true);
+      setSearchResult(null);
+      setSearchRequestStatus(null);
+      await loadRequests();
+      goToTierSelection(fromUid, fromUsername);
     } catch (error) {
-      setMessage(getPartnerErrorMessage(error));
+      showMessage(getPartnerErrorMessage(error));
     } finally {
-      setIsConnecting(false);
+      setBusyRequestId(null);
     }
   };
 
-  const alreadyConnected = searchResult?.partnerIds?.includes(signedInUser?.uid);
+  const handleRemoveRequest = async (fromUid, toUid) => {
+    setBusyRequestId(`${fromUid}_${toUid}`);
+    showMessage('');
+
+    try {
+      await deletePartnerRequest(fromUid, toUid);
+      if (searchResult && [fromUid, toUid].includes(searchResult.id)) setSearchRequestStatus(null);
+      await loadRequests();
+    } catch (error) {
+      showMessage(getPartnerErrorMessage(error));
+    } finally {
+      setBusyRequestId(null);
+    }
+  };
+
+  const handleSendRequest = async () => {
+    // If they already asked us, sending back simply accepts.
+    if (searchRequestStatus === 'incoming') {
+      await handleAccept(searchResult.id, searchResult.username);
+      return;
+    }
+
+    setBusyRequestId(searchResult.id);
+    showMessage('');
+
+    try {
+      await sendPartnerRequest(signedInUser.uid, searchResult);
+      setSearchRequestStatus('outgoing');
+      showMessage(
+        `Request sent. Once ${searchResult.username} accepts on their account, you can play together.`,
+        true,
+      );
+      await loadRequests();
+    } catch (error) {
+      showMessage(getPartnerErrorMessage(error));
+    } finally {
+      setBusyRequestId(null);
+    }
+  };
+
+  const alreadyConnected = searchResult?.partnerIds.includes(signedInUser?.uid);
+  const resultButtonTitle = (() => {
+    if (alreadyConnected) return 'Partners';
+    if (busyRequestId === searchResult?.id) return 'Sending...';
+    if (searchRequestStatus === 'incoming') return 'Accept Request';
+    if (searchRequestStatus === 'outgoing') return 'Request Sent';
+    return 'Send Request';
+  })();
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.eyebrow}>COOPERATIVE PLAY</Text>
       <Text style={styles.heading}>Find a Partner</Text>
+
+      {incomingRequests.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionHeading}>Requests for you</Text>
+          {incomingRequests.map((request) => (
+            <Card key={request.id} style={styles.requestCard}>
+              <View style={styles.requestRow}>
+                <Avatar username={request.fromUsername} />
+                <Text style={styles.resultUsername} numberOfLines={1}>{request.fromUsername}</Text>
+              </View>
+              <View style={styles.requestActions}>
+                <View style={styles.requestAction}>
+                  <PrimaryButton
+                    title={busyRequestId === request.fromUid ? 'Accepting...' : 'Accept'}
+                    onPress={() => handleAccept(request.fromUid, request.fromUsername)}
+                    disabled={busyRequestId !== null}
+                  />
+                </View>
+                <View style={styles.requestAction}>
+                  <PrimaryButton
+                    title="Decline"
+                    variant="outline"
+                    onPress={() => handleRemoveRequest(request.fromUid, request.toUid)}
+                    disabled={busyRequestId !== null}
+                  />
+                </View>
+              </View>
+            </Card>
+          ))}
+        </View>
+      ) : null}
 
       <Card style={styles.searchCard}>
         <Text style={styles.label}>Exact username</Text>
@@ -94,9 +222,9 @@ export default function PartnerConnectionScreen({ currentUser, navigation } = {}
           value={username}
           onChangeText={(value) => {
             setUsername(value);
-            setMessage('');
+            showMessage('');
             setSearchResult(null);
-            setIsConnected(false);
+            setSearchRequestStatus(null);
           }}
           onSubmitEditing={handleSearch}
           returnKeyType="search"
@@ -104,38 +232,63 @@ export default function PartnerConnectionScreen({ currentUser, navigation } = {}
         <PrimaryButton
           title={isSearching ? 'Searching...' : 'Search'}
           onPress={handleSearch}
-          disabled={isSearching || isConnecting}
+          disabled={isSearching || busyRequestId !== null}
         />
       </Card>
 
       {searchResult ? (
         <Card style={styles.resultCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{searchResult.username.slice(0, 1).toUpperCase()}</Text>
-          </View>
-          <View style={styles.resultDetails}>
-            <Text style={styles.resultUsername}>{searchResult.username}</Text>
-            <Text style={styles.resultEmail}>{searchResult.email}</Text>
-          </View>
+          <Avatar username={searchResult.username} />
+          <Text style={styles.resultUsername}>{searchResult.username}</Text>
           <PrimaryButton
-            title={isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Add Partner'}
-            onPress={handleAddPartner}
-            disabled={isConnected || isConnecting || alreadyConnected}
+            title={resultButtonTitle}
+            onPress={handleSendRequest}
+            disabled={
+              alreadyConnected
+              || searchRequestStatus === 'outgoing'
+              || busyRequestId !== null
+            }
           />
         </Card>
       ) : null}
 
       {message ? (
-        <Text style={[styles.message, isConnected && styles.successMessage]}>{message}</Text>
+        <Text style={[styles.message, isSuccess && styles.successMessage]}>{message}</Text>
       ) : null}
-    </View>
+
+      {outgoingRequests.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionHeading}>Sent requests</Text>
+          {outgoingRequests.map((request) => (
+            <Card key={request.id} style={styles.requestCard}>
+              <View style={styles.requestRow}>
+                <Avatar username={request.toUsername} />
+                <View style={styles.resultDetails}>
+                  <Text style={styles.resultUsername} numberOfLines={1}>{request.toUsername}</Text>
+                  <Text style={styles.pendingText}>Waiting for them to accept</Text>
+                </View>
+              </View>
+              <PrimaryButton
+                title={busyRequestId === request.id ? 'Cancelling...' : 'Cancel Request'}
+                variant="outline"
+                onPress={() => handleRemoveRequest(request.fromUid, request.toUid)}
+                disabled={busyRequestId !== null}
+              />
+            </Card>
+          ))}
+        </View>
+      ) : null}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scroll: {
     flex: 1,
     backgroundColor: colors.midnightNavy,
+  },
+  container: {
+    flexGrow: 1,
     padding: 24,
     justifyContent: 'center',
     gap: 16,
@@ -149,6 +302,14 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: typography.heading,
     fontSize: 28,
+  },
+  section: {
+    gap: 10,
+  },
+  sectionHeading: {
+    color: colors.white,
+    fontFamily: typography.subheading,
+    fontSize: 16,
   },
   searchCard: {
     gap: 12,
@@ -170,6 +331,21 @@ const styles = StyleSheet.create({
   resultCard: {
     gap: 12,
   },
+  requestCard: {
+    gap: 12,
+  },
+  requestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  requestActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  requestAction: {
+    flex: 1,
+  },
   avatar: {
     width: 48,
     height: 48,
@@ -184,14 +360,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   resultDetails: {
+    flex: 1,
     gap: 2,
   },
   resultUsername: {
+    flexShrink: 1,
     color: colors.white,
     fontFamily: typography.subheading,
     fontSize: 18,
   },
-  resultEmail: {
+  pendingText: {
     color: 'rgba(255,255,255,0.65)',
     fontFamily: typography.body,
     fontSize: 13,

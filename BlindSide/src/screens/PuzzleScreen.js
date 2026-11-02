@@ -9,7 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { arrayUnion } from 'firebase/firestore';
+import { arrayUnion, serverTimestamp } from 'firebase/firestore';
 import JigsawBoard from '../components/JigsawBoard';
 import CooperativeTurnOverlay from '../components/CooperativeTurnOverlay';
 import CooperativeOnboardingOverlay from '../components/CooperativeOnboardingOverlay';
@@ -25,6 +25,7 @@ import {
   getQuestionsForTier,
   getSoloPersonalBest,
   getSoloSession,
+  getUserProfile,
   updateCooperativeSession,
   updateSoloSession,
 } from '../services/FirestoreService';
@@ -39,6 +40,8 @@ import {
   advancePlayer,
   buildTurnState,
   confirmQuestion,
+  getTierForProgress,
+  getTiersUpTo,
   isQuestionFullyConfirmed,
   recordCorrectPlacement,
   skipQuestion,
@@ -105,7 +108,9 @@ export default function PuzzleScreen({ navigation, route }) {
   // ── cooperative session ──
   const cooperativeSessionId = useRef(null);
   const cooperativeSessionCreatePromise = useRef(null);
-  const [questions, setQuestions] = useState([]);
+  // Questions for every tier up to the chosen one, keyed by tier; the active tier
+  // escalates with puzzle progress (see getTierForProgress).
+  const [questionsByTier, setQuestionsByTier] = useState({});
   // turnPhase: null | 'confirming' | 'question' | 'complete'
   // 'confirming' — current player taps to unlock the board (turn 1 and every handoff)
   // null         — board is active for currentPlayerIndex
@@ -114,6 +119,22 @@ export default function PuzzleScreen({ navigation, route }) {
   // Cooperative starts in 'confirming' so Player 1 must tap before the board activates.
   const [turnPhase, setTurnPhase] = useState('confirming');
   const [turnState, setTurnState] = useState(null);
+  // Mirror of turnState for event handlers, so they can compute the next state and
+  // run side effects (Firestore checkpoints, phase changes) outside a setState
+  // updater — React may call updaters more than once.
+  const turnStateRef = useRef(null);
+  const commitTurnState = useCallback((next) => {
+    turnStateRef.current = next;
+    setTurnState(next);
+  }, []);
+  // Every drag that ends on the board or back in the tray counts as one move.
+  const movesRef = useRef(0);
+  // True while the most recent autosave failed, so the player knows progress
+  // since then may not survive leaving the puzzle.
+  const [saveFailed, setSaveFailed] = useState(false);
+  const reportSave = useCallback((savePromise) => {
+    savePromise.then(() => setSaveFailed(false)).catch(() => setSaveFailed(true));
+  }, []);
   // One-time explainer shown before this user's very first cooperative turn card ever.
   const [showCoopOnboarding, setShowCoopOnboarding] = useState(false);
   // One-time explainer shown before this user's very first solo puzzle ever
@@ -221,10 +242,10 @@ export default function PuzzleScreen({ navigation, route }) {
           puzzleId,
           difficulty: puzzle.difficultyRecommended,
           category: puzzle.category,
-          movesTaken: 0,
+          movesTaken: movesRef.current,
         })
-          .then((id) => { soloSessionId.current = id; return id; })
-          .catch(() => null);
+          .then((id) => { soloSessionId.current = id; setSaveFailed(false); return id; })
+          .catch(() => { setSaveFailed(true); return null; });
       }
     }
   }, [isCooperative, puzzle, puzzleId]);
@@ -256,14 +277,14 @@ export default function PuzzleScreen({ navigation, route }) {
             puzzleId,
             tier,
             status: 'inProgress',
-            movesTaken: 0,
+            movesTaken: movesRef.current,
             piecesPlacedTogether: 0,
             questionsAnswered: 0,
             questionsSkipped: 0,
             turnCount: 0,
           })
-            .then((id) => { cooperativeSessionId.current = id; return id; })
-            .catch(() => null);
+            .then((id) => { cooperativeSessionId.current = id; setSaveFailed(false); return id; })
+            .catch(() => { setSaveFailed(true); return null; });
         }
       }
     }
@@ -275,47 +296,67 @@ export default function PuzzleScreen({ navigation, route }) {
   const handleCoopCorrectPlacement = useCallback((nextTurnState, pieceId) => {
     const elapsed = startedAt.current !== null ? Date.now() - startedAt.current : 0;
 
-    // Checkpoint Firestore (best-effort, fire-and-forget). arrayUnion is safe
-    // to call every placement — it's an atomic append, not a read-modify-write,
-    // and piggybacks on the write this call already made before Phase 1.
+    // Checkpoint Firestore (fire-and-forget; failures surface via saveFailed).
+    // arrayUnion is safe to call every placement — it's an atomic append, not a
+    // read-modify-write, and piggybacks on the write this call already made.
     if (cooperativeSessionId.current) {
-      updateCooperativeSession(cooperativeSessionId.current, {
+      reportSave(updateCooperativeSession(cooperativeSessionId.current, {
         piecesPlacedTogether: nextTurnState.placedCount,
         turnCount: nextTurnState.turnCount,
         questionsAnswered: nextTurnState.questionsAnswered,
         questionsSkipped: nextTurnState.questionsSkipped,
         completionTime: normalizeElapsedTime(elapsed),
+        movesTaken: movesRef.current,
         placedPieceIds: arrayUnion(pieceId),
-      }).catch(() => {});
+      }));
     }
 
     if (nextTurnState.activeQuestion) {
       setTurnPhase('question');
     } else {
-      setTurnState((current) => advancePlayer(current));
+      commitTurnState(advancePlayer(nextTurnState));
       setTurnPhase('confirming');
     }
-  }, []);
+  }, [commitTurnState, reportSave]);
+
+  // Question answers/skips change the counters between placements, so save them
+  // straight away instead of waiting for the next piece.
+  const checkpointCoopQuestions = useCallback((state) => {
+    if (!cooperativeSessionId.current) return;
+    reportSave(updateCooperativeSession(cooperativeSessionId.current, {
+      questionsAnswered: state.questionsAnswered,
+      questionsSkipped: state.questionsSkipped,
+    }));
+  }, [reportSave]);
 
   // ── JigsawBoard onSettle callback (cooperative only) ──
   const handleCoopSettle = useCallback((pieceId) => {
-    if (!isCooperative || completionHandled.current) return;
+    const current = turnStateRef.current;
+    if (!isCooperative || completionHandled.current || !current) return;
 
     placedPieceIdsRef.current.push(pieceId);
     placedCountRef.current += 1;
     const isFinal = totalPiecesRef.current !== null
       && placedCountRef.current >= totalPiecesRef.current;
 
-    // Final placement is handled by onComplete — skip turn logic. The piece
-    // ID is still captured above so the completion write below includes it.
-    if (isFinal) return;
+    // Final placement: count it (so the completion write has the true turn and
+    // piece totals) but leave the rest to onComplete — no question, no handoff.
+    // JigsawBoard calls onSettle before its completion effect fires onComplete.
+    if (isFinal) {
+      commitTurnState(recordCorrectPlacement(current, [], true));
+      return;
+    }
 
-    setTurnState((current) => {
-      const next = recordCorrectPlacement(current, questions, false);
-      handleCoopCorrectPlacement(next, pieceId);
-      return next;
-    });
-  }, [handleCoopCorrectPlacement, isCooperative, questions]);
+    const tier = getTierForProgress(current.placedCount + 1, totalPiecesRef.current, route.params?.tier);
+    const next = recordCorrectPlacement(current, questionsByTier[tier] ?? [], false, tier);
+    commitTurnState(next);
+    handleCoopCorrectPlacement(next, pieceId);
+  }, [commitTurnState, handleCoopCorrectPlacement, isCooperative, questionsByTier, route.params?.tier]);
+
+  // ── JigsawBoard onMove callback (both modes) ──
+  const handleMove = useCallback(() => {
+    if (!completionHandled.current) movesRef.current += 1;
+  }, []);
 
   // ── JigsawBoard onSettle callback (solo only) ──
   const handleSoloSettle = useCallback((pieceId) => {
@@ -323,17 +364,17 @@ export default function PuzzleScreen({ navigation, route }) {
 
     placedPieceIdsRef.current.push(pieceId);
 
-    // Checkpoint Firestore (best-effort, fire-and-forget) — same pattern as
-    // the cooperative per-placement checkpoint, minus turn/question logic
-    // since solo has neither.
+    // Checkpoint Firestore (fire-and-forget) — same pattern as the cooperative
+    // per-placement checkpoint, minus turn/question logic since solo has neither.
     if (soloSessionId.current) {
       const elapsed = startedAt.current !== null ? Date.now() - startedAt.current : 0;
-      updateSoloSession(soloSessionId.current, {
+      reportSave(updateSoloSession(soloSessionId.current, {
         placedPieceIds: arrayUnion(pieceId),
         completionTime: normalizeElapsedTime(elapsed),
-      }).catch(() => {});
+        movesTaken: movesRef.current,
+      }));
     }
-  }, [isCooperative]);
+  }, [isCooperative, reportSave]);
 
   // ── puzzle complete ──
   const handlePuzzleComplete = useCallback(async () => {
@@ -352,16 +393,20 @@ export default function PuzzleScreen({ navigation, route }) {
         await cooperativeSessionCreatePromise.current;
       }
 
+      // Read from the ref: handleCoopSettle already counted the final placement.
+      const finalTurnState = turnStateRef.current;
+
       if (cooperativeSessionId.current) {
         try {
           await updateCooperativeSession(cooperativeSessionId.current, {
             status: 'completed',
             completionTime: elapsed,
-            completedAt: new Date(),
+            completedAt: serverTimestamp(),
+            movesTaken: movesRef.current,
             piecesPlacedTogether: totalPiecesRef.current ?? placedCountRef.current,
-            turnCount: turnState?.turnCount ?? 0,
-            questionsAnswered: turnState?.questionsAnswered ?? 0,
-            questionsSkipped: turnState?.questionsSkipped ?? 0,
+            turnCount: finalTurnState?.turnCount ?? 0,
+            questionsAnswered: finalTurnState?.questionsAnswered ?? 0,
+            questionsSkipped: finalTurnState?.questionsSkipped ?? 0,
             // Full overwrite (not arrayUnion): the final piece never went
             // through handleCoopCorrectPlacement's per-placement checkpoint,
             // so placedPieceIdsRef is the only complete record at this point.
@@ -378,9 +423,10 @@ export default function PuzzleScreen({ navigation, route }) {
         puzzleId,
         puzzleName: puzzle.imageName,
         completionTime: elapsed,
-        turnCount: turnState?.turnCount ?? 0,
-        questionsAnswered: turnState?.questionsAnswered ?? 0,
-        questionsSkipped: turnState?.questionsSkipped ?? 0,
+        movesTaken: movesRef.current,
+        turnCount: finalTurnState?.turnCount ?? 0,
+        questionsAnswered: finalTurnState?.questionsAnswered ?? 0,
+        questionsSkipped: finalTurnState?.questionsSkipped ?? 0,
         partnerId: route.params?.partnerId,
         partnerName: route.params?.partnerName ?? 'Partner',
         tier: route.params?.tier,
@@ -401,6 +447,7 @@ export default function PuzzleScreen({ navigation, route }) {
       difficulty: puzzle.difficultyRecommended,
       category: puzzle.category,
       completionTime,
+      movesTaken: movesRef.current,
     };
 
     const uid = auth.currentUser?.uid;
@@ -431,7 +478,8 @@ export default function PuzzleScreen({ navigation, route }) {
           await updateSoloSession(soloSessionId.current, {
             status: 'completed',
             completionTime,
-            completedAt: new Date(),
+            completedAt: serverTimestamp(),
+            movesTaken: movesRef.current,
             placedPieceIds: placedPieceIdsRef.current,
           });
           sessionId = soloSessionId.current;
@@ -444,7 +492,7 @@ export default function PuzzleScreen({ navigation, route }) {
             difficulty: puzzle.difficultyRecommended,
             category: puzzle.category,
             completionTime,
-            movesTaken: 0,
+            movesTaken: movesRef.current,
           });
         }
       } catch (error) {
@@ -464,27 +512,29 @@ export default function PuzzleScreen({ navigation, route }) {
       sessionId,
       saveError,
     });
-  }, [clearTimer, isCooperative, navigation, puzzle, puzzleId, turnState]);
+  }, [clearTimer, isCooperative, navigation, puzzle, puzzleId]);
 
   // ── question skip: either player taps alone, no second confirm needed ──
   const handleSkipQuestion = useCallback(() => {
-    setTurnState((current) => skipQuestion(current));
+    const next = skipQuestion(turnStateRef.current);
+    commitTurnState(next);
     setTurnPhase('confirming');
-  }, []);
+    checkpointCoopQuestions(next);
+  }, [checkpointCoopQuestions, commitTurnState]);
 
   // ── question confirmation ──
   const handleConfirmQuestion = useCallback((playerIndex) => {
-    setTurnState((current) => {
-      const next = confirmQuestion(current, playerIndex);
-      if (isQuestionFullyConfirmed(next)) {
-        // Advance player here so 'confirming' immediately shows the next player's name.
-        const advanced = advancePlayer(next);
-        setTurnPhase('confirming');
-        return advanced;
-      }
-      return next;
-    });
-  }, []);
+    const next = confirmQuestion(turnStateRef.current, playerIndex);
+    if (!isQuestionFullyConfirmed(next)) {
+      commitTurnState(next);
+      return;
+    }
+    // Advance player here so 'confirming' immediately shows the next player's name.
+    const advanced = advancePlayer(next);
+    commitTurnState(advanced);
+    setTurnPhase('confirming');
+    checkpointCoopQuestions(advanced);
+  }, [checkpointCoopQuestions, commitTurnState]);
 
   // ── orientation subscription ──
   useEffect(() => {
@@ -541,40 +591,50 @@ export default function PuzzleScreen({ navigation, route }) {
 
   // ── cooperative setup: load questions + init turn state ──
   useEffect(() => {
-    if (!isCooperative) return;
+    if (!isCooperative) return undefined;
 
     const tier = route.params?.tier;
-    const partnerAName = route.params?.partnerName ?? 'Partner 1';
+    const playerBName = route.params?.partnerName ?? 'Partner';
     const uid = auth.currentUser?.uid;
+    let cancelled = false;
 
-    // We need the signed-in user's display name for Player A.
-    // Fall back to 'You' if the profile isn't available here.
-    const playerAName = 'You';
-    const playerBName = partnerAName;
-
-    setTurnState(buildTurnState(playerAName, playerBName));
+    // Player A starts as a placeholder and is swapped for the signed-in user's
+    // username once their profile loads — on a shared device "You" is ambiguous.
+    commitTurnState(buildTurnState('Player 1', playerBName));
     placedCountRef.current = 0;
     totalPiecesRef.current = null;
     placedPieceIdsRef.current = [];
     resumedElapsedRef.current = 0;
+    movesRef.current = 0;
     setInitialPlacedPieceIds(null);
 
-    if (tier) {
-      getQuestionsForTier(tier)
-        .then((fetched) => setQuestions(fetched))
-        .catch(() => setQuestions([]));
+    if (uid) {
+      getUserProfile(uid)
+        .then((profile) => {
+          const current = turnStateRef.current;
+          if (cancelled || !profile?.username || !current) return;
+          commitTurnState({ ...current, partnerNames: [profile.username, current.partnerNames[1]] });
+        })
+        .catch(() => {});
     }
+
+    const tiers = getTiersUpTo(tier);
+    Promise.all(tiers.map((tierKey) => getQuestionsForTier(tierKey).catch(() => [])))
+      .then((lists) => {
+        if (!cancelled) {
+          setQuestionsByTier(Object.fromEntries(tiers.map((tierKey, index) => [tierKey, lists[index]])));
+        }
+      });
 
     if (!sessionIdParam) {
       setIsResumeLoading(false);
-      return undefined;
+      return () => { cancelled = true; };
     }
 
     // Resume path: load the existing session and pre-mark its placed pieces
     // instead of starting the puzzle fresh. JigsawBoard doesn't render until
     // isResumeLoading clears, so it always mounts with the correct initial
     // placed-piece set — no race between the board appearing and this fetch.
-    let cancelled = false;
     setIsResumeLoading(true);
 
     getCooperativeSession(sessionIdParam)
@@ -586,12 +646,13 @@ export default function PuzzleScreen({ navigation, route }) {
         placedPieceIdsRef.current = [...placedIds];
         placedCountRef.current = placedIds.length;
         resumedElapsedRef.current = session.completionTime ?? 0;
+        movesRef.current = session.movesTaken ?? 0;
         setInitialPlacedPieceIds(placedIds);
         setElapsedTime(resumedElapsedRef.current);
 
         const turnCount = session.turnCount ?? 0;
-        setTurnState((current) => ({
-          ...(current ?? buildTurnState(playerAName, playerBName)),
+        commitTurnState({
+          ...(turnStateRef.current ?? buildTurnState('Player 1', playerBName)),
           placedCount: placedIds.length,
           turnCount,
           // currentPlayerIndex toggles once per completed turn in lockstep
@@ -600,7 +661,7 @@ export default function PuzzleScreen({ navigation, route }) {
           currentPlayerIndex: turnCount % 2,
           questionsAnswered: session.questionsAnswered ?? 0,
           questionsSkipped: session.questionsSkipped ?? 0,
-        }));
+        });
       })
       .catch(() => {})
       .finally(() => {
@@ -608,7 +669,7 @@ export default function PuzzleScreen({ navigation, route }) {
       });
 
     return () => { cancelled = true; };
-  }, [isCooperative, puzzleId, route.params, sessionIdParam]);
+  }, [commitTurnState, isCooperative, puzzleId, route.params, sessionIdParam]);
 
   // ── solo setup: resume an existing in-progress solo session ──
   useEffect(() => {
@@ -619,6 +680,7 @@ export default function PuzzleScreen({ navigation, route }) {
     placedCountRef.current = 0;
     placedPieceIdsRef.current = [];
     resumedElapsedRef.current = 0;
+    movesRef.current = 0;
     setInitialPlacedPieceIds(null);
 
     if (!sessionIdParam) {
@@ -641,6 +703,7 @@ export default function PuzzleScreen({ navigation, route }) {
         placedPieceIdsRef.current = [...placedIds];
         placedCountRef.current = placedIds.length;
         resumedElapsedRef.current = session.completionTime ?? 0;
+        movesRef.current = session.movesTaken ?? 0;
         setInitialPlacedPieceIds(placedIds);
         setElapsedTime(resumedElapsedRef.current);
       })
@@ -664,6 +727,8 @@ export default function PuzzleScreen({ navigation, route }) {
     placedCountRef.current = 0;
     totalPiecesRef.current = null;
     placedPieceIdsRef.current = [];
+    movesRef.current = 0;
+    setSaveFailed(false);
     setElapsedTime(0);
     setTurnPhase(isCooperative ? 'confirming' : null);
     return clearTimer;
@@ -717,6 +782,7 @@ export default function PuzzleScreen({ navigation, route }) {
           onFirstInteraction={isCooperative ? undefined : handleFirstInteraction}
           onComplete={handlePuzzleComplete}
           onSettle={isCooperative ? handleCoopSettle : handleSoloSettle}
+          onMove={handleMove}
           onImageError={handleImageError}
           initialPlacedIds={initialPlacedPieceIds ?? undefined}
           onPauseRequest={handleRequestExit}
@@ -761,8 +827,16 @@ export default function PuzzleScreen({ navigation, route }) {
         />
       ) : null}
 
+      {isLandscape && saveFailed ? (
+        <View style={styles.saveWarning} pointerEvents="none" accessibilityLiveRegion="polite">
+          <Ionicons name="cloud-offline-outline" size={14} color={colors.midnightNavy} />
+          <Text style={styles.saveWarningText}>Progress not saved — check your connection</Text>
+        </View>
+      ) : null}
+
       <ExitConfirmOverlay
         visible={showExitConfirm}
+        saveFailed={saveFailed}
         isCooperative={isCooperative}
         partnerName={route.params?.partnerName ?? 'your partner'}
         onResume={handleResumePlay}
@@ -796,6 +870,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     textAlign: 'center',
+  },
+  saveWarning: {
+    position: 'absolute',
+    top: 8,
+    alignSelf: 'center',
+    zIndex: 30,
+    elevation: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: colors.victoryGold,
+  },
+  saveWarningText: {
+    color: colors.midnightNavy,
+    fontFamily: typography.subheading,
+    fontSize: 12,
   },
   orientationOverlay: {
     ...StyleSheet.absoluteFillObject,

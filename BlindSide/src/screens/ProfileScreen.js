@@ -2,6 +2,7 @@
 import { useCallback, useState } from 'react';
 import {
   Image,
+  Pressable,
   ScrollView,
   View,
   Text,
@@ -15,10 +16,11 @@ import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
 import PuzzleSessionListItem from '../components/PuzzleSessionListItem';
 import SoloPuzzleStatRow from '../components/SoloPuzzleStatRow';
+import DeleteAccountOverlay from '../components/DeleteAccountOverlay';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
-import { logoutUser } from '../services/AuthService';
+import { deleteAccount, getAuthErrorMessage, logoutUser } from '../services/AuthService';
 import { auth } from '../services/FirebaseConfig';
 import {
   getCompletedSoloSessions,
@@ -43,6 +45,9 @@ export default function ProfileScreen({ navigation }) {
   const isLandscape = width > height;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState('');
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState('');
   const [profileData, setProfileData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -138,6 +143,20 @@ export default function ProfileScreen({ navigation }) {
     } catch (error) {
       setLogoutError('Unable to sign out. Please try again.');
       setIsLoggingOut(false);
+    }
+  };
+
+  // On success the auth listener in RootNavigator swaps to the sign-in stack, which
+  // unmounts this screen, so state only needs resetting on failure.
+  const handleDeleteAccount = async (password) => {
+    setDeleteAccountError('');
+    setIsDeletingAccount(true);
+
+    try {
+      await deleteAccount(password);
+    } catch (error) {
+      setDeleteAccountError(getAuthErrorMessage(error));
+      setIsDeletingAccount(false);
     }
   };
 
@@ -302,8 +321,25 @@ export default function ProfileScreen({ navigation }) {
           disabled={isLoggingOut}
           variant="outline"
         />
+        <Pressable
+          style={({ pressed }) => [styles.deleteAccountButton, pressed && styles.deleteAccountPressed]}
+          accessibilityRole="button"
+          onPress={() => {
+            setDeleteAccountError('');
+            setShowDeleteAccount(true);
+          }}
+        >
+          <Text style={styles.deleteAccountLabel}>Delete Account</Text>
+        </Pressable>
       </View>
       </ScrollView>
+      <DeleteAccountOverlay
+        visible={showDeleteAccount}
+        isDeleting={isDeletingAccount}
+        errorMessage={deleteAccountError}
+        onCancel={() => setShowDeleteAccount(false)}
+        onConfirm={handleDeleteAccount}
+      />
     </SafeAreaView>
   );
 }
@@ -450,6 +486,20 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.08)',
     gap: 8,
+  },
+  deleteAccountButton: {
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  deleteAccountPressed: {
+    opacity: 0.6,
+  },
+  deleteAccountLabel: {
+    color: '#F87171',
+    fontFamily: typography.body,
+    fontSize: 13,
+    textDecorationLine: 'underline',
   },
   logoutError: {
     color: '#FCA5A5',

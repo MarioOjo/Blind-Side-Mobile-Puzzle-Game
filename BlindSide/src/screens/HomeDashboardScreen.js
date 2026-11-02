@@ -19,7 +19,9 @@ import {
   getCooperativeSessions,
   getUserProfile,
   getUserProfiles,
+  removeLegacyProfileEmail,
 } from '../services/FirestoreService';
+import { getIncomingPartnerRequests } from '../services/PartnerService';
 import {
   getSessionPartnerId,
   indexProfilesByUid,
@@ -44,11 +46,14 @@ export default function HomeDashboardScreen({ navigation }) {
         const uid = auth.currentUser?.uid;
         if (!uid) throw new Error('No authenticated user.');
 
-        const [profile, sessions] = await Promise.all([
+        const [profile, sessions, incomingRequests] = await Promise.all([
           getUserProfile(uid),
           getCooperativeSessions(uid),
+          // A failed request lookup shouldn't block the rest of the dashboard.
+          getIncomingPartnerRequests(uid).catch(() => []),
         ]);
         if (!profile) throw new Error('User profile not found.');
+        if ('email' in profile) removeLegacyProfileEmail(uid).catch(() => {});
 
         const sessionPartnerIds = sessions.map((session) => getSessionPartnerId(session, uid));
         const hydratedProfiles = await getUserProfiles([...profile.partnerIds, ...sessionPartnerIds]);
@@ -57,6 +62,7 @@ export default function HomeDashboardScreen({ navigation }) {
         if (isActive) {
           setDashboard({
             profile,
+            incomingRequestCount: incomingRequests.length,
             partners: profile.partnerIds.map((partnerId) => profilesByUid[partnerId]).filter(Boolean),
             sessions: sessions.slice(0, 3).map((session) => (
               presentCooperativeSession(session, uid, profilesByUid)
@@ -181,7 +187,11 @@ export default function HomeDashboardScreen({ navigation }) {
               ]}
               onPress={() => navigation.navigate('PartnerConnection')}
             >
-              <Text style={[styles.modeCardButtonText, styles.coopButtonText]}>Add</Text>
+              <Text style={[styles.modeCardButtonText, styles.coopButtonText]}>
+                {dashboard?.incomingRequestCount
+                  ? `Requests (${dashboard.incomingRequestCount})`
+                  : 'Add'}
+              </Text>
               <Ionicons name="arrow-forward" size={14} color={colors.neonCyan} />
             </Pressable>
           </Card>

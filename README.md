@@ -167,7 +167,7 @@ Solo and cooperative sessions share one schema rather than separate tables, sinc
 
 ## Known Limitations
 
-- **Google Sign-In** — the button exists in the UI but is not functionally wired to real Google OAuth. Real native Google Sign-In requires a custom Expo development build, OAuth client IDs, SHA-1 fingerprints, and Firebase/Google Cloud Console configuration — deliberately deferred as out of scope for the current build phase.
+- **Email and password sign-in only** — Google Sign-In is not offered. The placeholder button was removed in v1.3.1 because it was never wired up. Adding it would need OAuth client IDs, SHA-1 fingerprints for the Android signing key, and Firebase/Google Cloud Console configuration.
 - **Web platform** — not supported; native dependencies prevent it from rendering correctly.
 
 ## Architecture Notes

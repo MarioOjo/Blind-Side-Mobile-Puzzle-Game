@@ -13,7 +13,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
-import GoogleButton from '../components/GoogleButton';
 import PuzzleMark from '../components/PuzzleMark';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
@@ -49,10 +48,6 @@ export default function LoginScreen({ navigation }) {
       setErrorMessage(getAuthErrorMessage(error));
       setIsSubmitting(false);
     }
-  };
-
-  const handleGooglePress = () => {
-    setErrorMessage('Google sign-in requires a configured development build.');
   };
 
   const submitPasswordReset = async (targetEmail) => {
@@ -166,13 +161,12 @@ export default function LoginScreen({ navigation }) {
         >
           {isSendingReset ? 'Sending...' : 'Forgot Password?'}
         </Text>
-        {/* The divider separates the primary login path from alternate sign-in options. */}
+        {/* The divider separates logging in from creating a new account. */}
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>OR</Text>
           <View style={styles.dividerLine} />
         </View>
-        <GoogleButton onPress={handleGooglePress} />
         {/* Secondary action routes to the registration screen inside the auth stack. */}
         <PrimaryButton title="Create Account" variant="outline" onPress={() => navigation.navigate('Register')} />
       </Card>

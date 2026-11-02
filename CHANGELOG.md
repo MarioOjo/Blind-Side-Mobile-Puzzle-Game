@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.1 — Remove the Google sign-in button
+
+- **Removed "Continue with Google" from the login screen.** It was never wired to Google OAuth and only showed an error, so it looked broken. Email and password is the only sign-in method. The unused `GoogleButton` and `GoogleIcon` components are deleted.
+- `app.json` now carries the EAS project ID created by the first `npm run build:apk`.
+
 ## v1.3.0 — Full puzzle catalog and Android APK
 
 - **12 new puzzle images (36 total).** Every category now has 3 puzzles at every difficulty. Several Easy and Medium categories had a single puzzle, so tapping them jumped straight into the same image every time.

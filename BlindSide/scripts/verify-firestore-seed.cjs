@@ -1,4 +1,5 @@
-// Confirms the Firestore emulator contains exactly the document IDs declared by the seed manifest.
+// Confirms the Firestore emulator contains exactly the document IDs declared by the seed manifest,
+// and that puzzle images point at Storage when the Storage emulator was used for seeding.
 const { deleteApp, initializeApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { puzzleImages, questions } = require('./firestore-seed-manifest.cjs');
@@ -25,6 +26,16 @@ async function verifySeed() {
     }
     if (JSON.stringify(questionIds) !== JSON.stringify(expectedQuestionIds)) {
       throw new Error(`Unexpected question IDs: ${questionIds.join(', ')}`);
+    }
+    if (process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
+      const unmirrored = imagesSnapshot.docs
+        .filter((document) => !new URL(document.data().imageURL).pathname.startsWith('/v0/b/'))
+        .map((document) => document.id);
+      if (unmirrored.length > 0) {
+        throw new Error(`Puzzle images not served from Storage: ${unmirrored.join(', ')}`);
+      }
+      const response = await fetch(imagesSnapshot.docs[0].data().imageURL);
+      if (!response.ok) throw new Error(`Storage download failed (HTTP ${response.status}).`);
     }
     console.log(`[seed] Verified ${imageIds.length} puzzleImages and ${questionIds.length} questions.`);
   } finally {

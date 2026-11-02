@@ -31,9 +31,9 @@ test('fixed difficulties and categories remain visible with real counts', () => 
   assert.deepEqual(
     getAvailableDifficulties(puzzleImages).map(({ key, count }) => ({ key, count })),
     [
-      { key: 'easy', count: 5 },
+      { key: 'easy', count: 6 },
       { key: 'medium', count: 6 },
-      { key: 'hard', count: 5 },
+      { key: 'hard', count: 12 },
     ],
   );
   assert.deepEqual(
@@ -42,6 +42,7 @@ test('fixed difficulties and categories remain visible with real counts', () => 
       { key: 'characters', count: 3 },
       { key: 'people', count: 1 },
       { key: 'places', count: 1 },
+      { key: 'textures', count: 1 },
     ],
   );
   assert.deepEqual(
@@ -50,14 +51,16 @@ test('fixed difficulties and categories remain visible with real counts', () => 
       { key: 'characters', count: 1 },
       { key: 'people', count: 2 },
       { key: 'places', count: 2 },
+      { key: 'textures', count: 1 },
     ],
   );
   assert.deepEqual(
     getAvailableCategories(puzzleImages, 'hard').map(({ key, count }) => ({ key, count })),
     [
-      { key: 'characters', count: 2 },
-      { key: 'people', count: 1 },
-      { key: 'places', count: 1 },
+      { key: 'characters', count: 3 },
+      { key: 'people', count: 3 },
+      { key: 'places', count: 3 },
+      { key: 'textures', count: 3 },
     ],
   );
 });
@@ -82,27 +85,36 @@ test('catalog filtering is normalized, deterministic, and safe for malformed inp
       { key: 'characters', count: 0 },
       { key: 'people', count: 0 },
       { key: 'places', count: 0 },
+      { key: 'textures', count: 0 },
     ],
   );
   assert.deepEqual(getPuzzlesForSelection([null, {}, ...puzzleImages], { difficulty: 'hard' })
     .map(({ imageId }) => imageId), [
+    'textures-autumn-leaves',
+    'places-burano',
+    'textures-candy-sprinkles',
+    'people-carnival-dancers',
     'characters-bird-mural',
     'textures-coffee-beans',
     'characters-mosaic-mural',
+    'characters-graffiti-monsters',
+    'people-holi-festival',
+    'places-hot-air-balloons',
     'places-marrakech-market',
     'people-colorful-portrait',
   ]);
 });
 
 test('category routing shows empty state and preserves populated branches', () => {
-  // Every real category x difficulty combination among the 3 selectable
-  // categories now has at least one match (hard/characters gained 2 here),
-  // so 'textures' — a valid schema category, just excluded from the
-  // selectable CATEGORY_OPTIONS UI — is the only remaining way to
-  // demonstrate a genuine empty state with real manifest data.
-  assert.deepEqual(getCategoryRoute(puzzleImages, 'easy', 'textures'), {
+  // Every real category x difficulty combination now has at least one match,
+  // so the empty state is shown with an empty catalog.
+  assert.deepEqual(getCategoryRoute([], 'easy', 'textures'), {
     screen: 'PuzzleSelection',
     params: { difficulty: 'easy', category: 'textures' },
+  });
+  assert.deepEqual(getCategoryRoute(puzzleImages, 'easy', 'textures'), {
+    screen: 'Puzzle',
+    params: { puzzleId: 'textures-paint-swirl' },
   });
   assert.deepEqual(getCategoryRoute(puzzleImages, 'easy', 'places'), {
     screen: 'Puzzle',

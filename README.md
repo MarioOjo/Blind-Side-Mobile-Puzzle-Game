@@ -18,6 +18,12 @@ Before starting, the pair picks how deep questions may go. Questions always star
 
 > Note: this cooperative, pass-and-play direction was a deliberate pivot from an earlier competitive "beat their time" concept, made in response to progress-milestone feedback that the original design didn't sufficiently support real-life social connection.
 
+## What's New in v1.2
+
+- **24 puzzles, up from 16** — 8 new images, so every cooperative category now has 3 puzzles to choose from.
+- **Textures category** — a fourth category (leaves, sprinkles, coffee beans, and more) in both solo and cooperative play.
+- **Images hosted in Firebase Storage** — puzzle art is still sourced from Unsplash, but players now load BlindSide's own copy, so a photo removed from Unsplash can't break a puzzle.
+
 ## What's New in v1.1
 
 - **Partner requests** — connecting now takes consent: send a request by username, and the other player accepts (or declines) from their own account.
@@ -110,10 +116,10 @@ Scan the QR code with Expo Go (Android/iOS), or press `a` for Android emulator, 
 
 1. Create a Firebase project, register a **Web** app (not Android/iOS — this project uses the Firebase JS SDK, which works cross-platform through Expo)
 2. Enable **Email/Password** sign-in under Authentication → Sign-in method
-3. Create a Firestore database
-4. Deploy security rules: `npx firebase deploy --only firestore:rules` (when upgrading from v1.0, deploy these together with the v1.1 app — see [CHANGELOG.md](CHANGELOG.md))
+3. Create a Firestore database, and enable **Storage** (Build → Storage → Get started; requires the Blaze plan)
+4. Deploy security rules: `npx firebase deploy --only firestore:rules,storage` (when upgrading from v1.0, deploy these together with the v1.1 app — see [CHANGELOG.md](CHANGELOG.md))
 5. Deploy indexes: `npx firebase deploy --only firestore:indexes`
-6. Seed initial puzzle images and questions: `npm run seed:firestore:production` (requires Application Default Credentials configured — see script for details)
+6. Seed initial puzzle images and questions: `npm run seed:firestore:production` (requires Application Default Credentials configured — see script for details). This also copies each puzzle image from Unsplash into Storage.
 7. Upgrading from v1.0 only: strip stored emails from existing profiles with `npm run migrate:remove-emails:production` (see `scripts/README.md`)
 
 ## Testing
@@ -136,7 +142,7 @@ Firestore collections:
 - **`usernames`** — normalized lowercase username reservations (case-insensitive uniqueness); usernames are 3–20 letters, numbers, `_`, or `.`
 - **`partnerRequests`** — pending partner requests keyed `<fromUid>_<toUid>`; readable only by the two players, and removed when accepted, declined, or cancelled
 - **`sessions`** — unified for both solo and cooperative play; `mode` field distinguishes them. Both modes record `movesTaken`; cooperative sessions also carry `partnerIds`, `tier` (the deepest tier reached), `piecesPlacedTogether`, `questionsAnswered`, and `questionsSkipped`
-- **`puzzleImages`** — puzzle image metadata (category, difficulty, image URL)
+- **`puzzleImages`** — puzzle image metadata (category, difficulty, image URL). The URL points at the image's copy in Firebase Storage (`puzzleImages/<imageId>.jpg`); the seed manifest keeps the original Unsplash URL as the source
 - **`questions`** — tiered social-question content
 
 Solo and cooperative sessions share one schema rather than separate tables, since both represent "someone completed a puzzle" with mostly-overlapping fields.
@@ -145,7 +151,6 @@ Solo and cooperative sessions share one schema rather than separate tables, sinc
 
 - **Google Sign-In** — the button exists in the UI but is not functionally wired to real Google OAuth. Real native Google Sign-In requires a custom Expo development build, OAuth client IDs, SHA-1 fingerprints, and Firebase/Google Cloud Console configuration — deliberately deferred as out of scope for the current build phase.
 - **Web platform** — not supported; native dependencies prevent it from rendering correctly.
-- **Firebase Storage** — not yet configured; puzzle images currently reference external stable URLs rather than uploaded assets.
 
 ## Architecture Notes
 

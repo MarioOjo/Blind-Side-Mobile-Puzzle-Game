@@ -1,0 +1,13 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Puzzle art is mirrored here from Unsplash by scripts/seed-firestore.cjs (Admin SDK,
+    // which bypasses these rules). The app loads it through the tokenised download URL
+    // stored on each puzzleImages document, so clients never need to write.
+    match /puzzleImages/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}

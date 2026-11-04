@@ -18,6 +18,11 @@ Before starting, the pair picks how deep questions may go. Questions always star
 
 > Note: this cooperative, pass-and-play direction was a deliberate pivot from an earlier competitive "beat their time" concept, made in response to progress-milestone feedback that the original design didn't sufficiently support real-life social connection.
 
+## What's New in v1.3.1
+
+- **Google button removed** — the login screen no longer shows "Continue with Google", which was never wired up and only showed an error. Sign in with email and password.
+- **Download the APK** — [install BlindSide on Android](https://expo.dev/accounts/marioojo/projects/BlindSide/builds/4aa3dbb9-f0ce-463e-947c-9ceb05b4b20c) (open the link on your phone).
+
 ## What's New in v1.3
 
 - **36 puzzles** — 3 in every category at every difficulty, including new Cape Town scenes (Bo-Kaap, Table Mountain, Lion's Head).
@@ -118,6 +123,8 @@ Scan the QR code with Expo Go (Android/iOS), or press `a` for Android emulator, 
 **Web is not a supported platform** — several native-only dependencies (Firebase Auth persistence, SVG rendering paths) are not web-compatible, and web has never been part of this project's target platforms.
 
 ## Building the Android APK
+
+To just install the latest build, open the [v1.3.1 APK link](https://expo.dev/accounts/marioojo/projects/BlindSide/builds/4aa3dbb9-f0ce-463e-947c-9ceb05b4b20c) on an Android phone. To build your own:
 
 Builds run in the cloud on EAS Build with a free [Expo account](https://expo.dev/signup).
 

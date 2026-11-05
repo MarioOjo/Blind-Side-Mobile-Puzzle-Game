@@ -21,11 +21,11 @@ Before starting, the pair picks how deep questions may go. Questions always star
 ## What's New in v1.4
 
 - **Sign in with Google** — Log In and Create Account now have a working Google button. First-time Google players choose a username before they start. Google sign-in works in the installed APK, not in Expo Go.
+- **Download the APK** — [install BlindSide v1.4.0 on Android](https://expo.dev/accounts/marioojo/projects/BlindSide/builds/031fa7c5-e0e7-4be4-816a-52ffb8cb99ee) (open the link on your phone).
 
 ## What's New in v1.3.2
 
 - **Matching sign-in screens** — Create Account now looks like Log In, scrolls with the keyboard open, and has a show-password toggle. Placeholder text is faded so it no longer looks like typed text.
-- **Download the APK** — [install BlindSide v1.3.2 on Android](https://expo.dev/accounts/marioojo/projects/BlindSide/builds/5165441a-5dfd-44de-83f2-7f0137647990) (open the link on your phone).
 
 ## What's New in v1.3.1
 
@@ -132,7 +132,7 @@ Scan the QR code with Expo Go (Android/iOS), or press `a` for Android emulator, 
 
 ## Building the Android APK
 
-To just install the latest build, open the [v1.3.2 APK link](https://expo.dev/accounts/marioojo/projects/BlindSide/builds/5165441a-5dfd-44de-83f2-7f0137647990) on an Android phone. To build your own:
+To just install the latest build, open the [v1.4.0 APK link](https://expo.dev/accounts/marioojo/projects/BlindSide/builds/031fa7c5-e0e7-4be4-816a-52ffb8cb99ee) on an Android phone. To build your own:
 
 Builds run in the cloud on EAS Build with a free [Expo account](https://expo.dev/signup).
 

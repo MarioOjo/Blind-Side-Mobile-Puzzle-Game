@@ -18,6 +18,10 @@ Before starting, the pair picks how deep questions may go. Questions always star
 
 > Note: this cooperative, pass-and-play direction was a deliberate pivot from an earlier competitive "beat their time" concept, made in response to progress-milestone feedback that the original design didn't sufficiently support real-life social connection.
 
+## What's New in v1.4
+
+- **Sign in with Google** — Log In and Create Account now have a working Google button. First-time Google players choose a username before they start. Google sign-in works in the installed APK, not in Expo Go.
+
 ## What's New in v1.3.2
 
 - **Matching sign-in screens** — Create Account now looks like Log In, scrolls with the keyboard open, and has a show-password toggle. Placeholder text is faded so it no longer looks like typed text.
@@ -55,7 +59,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list of fixes, security changes, a
 |---|---|
 | Framework | Expo / React Native (SDK 54 — intentionally pinned, do not upgrade without reason) |
 | Navigation | React Navigation (Native Stack + Bottom Tabs) |
-| Auth | Firebase Authentication (email/password) |
+| Auth | Firebase Authentication (email/password and Google via `@react-native-google-signin/google-signin`) |
 | Database | Cloud Firestore |
 | Gestures | react-native-gesture-handler, react-native-reanimated |
 | Graphics | react-native-svg, expo-linear-gradient |
@@ -144,7 +148,7 @@ The build reads Firebase settings from `.env`, which `.easignore` uploads to EAS
 ## Firebase Setup (for a fresh clone)
 
 1. Create a Firebase project, register a **Web** app (not Android/iOS — this project uses the Firebase JS SDK, which works cross-platform through Expo)
-2. Enable **Email/Password** sign-in under Authentication → Sign-in method
+2. Enable **Email/Password** and **Google** sign-in under Authentication → Sign-in method. Copy the Google provider's **Web client ID** (Web SDK configuration) into `.env` as `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`. Then add an **Android** app in Project settings with package `com.marioojo.blindside` and the SHA-1 from `npx eas-cli credentials` (Android → preview), or Google sign-in fails with "isn't set up for this version of the app"
 3. Create a Firestore database, and enable **Storage** (Build → Storage → Get started; requires the Blaze plan)
 4. Deploy security rules: `npx firebase deploy --only firestore:rules,storage` (when upgrading from v1.0, deploy these together with the v1.1 app — see [CHANGELOG.md](CHANGELOG.md))
 5. Deploy indexes: `npx firebase deploy --only firestore:indexes`
@@ -178,7 +182,8 @@ Solo and cooperative sessions share one schema rather than separate tables, sinc
 
 ## Known Limitations
 
-- **Email and password sign-in only** — Google Sign-In is not offered. The placeholder button was removed in v1.3.1 because it was never wired up. Adding it would need OAuth client IDs, SHA-1 fingerprints for the Android signing key, and Firebase/Google Cloud Console configuration.
+- **Google sign-in needs a built app** — the native Google module isn't in Expo Go, so the button is hidden there. Use an EAS build (`npm run build:apk`) to test it.
+- **Google and email accounts with the same address** — Firebase treats Google as the trusted owner of a Gmail address. If someone registered with email and password but never verified the address, signing in with Google takes over that account (same profile and history) and the old password stops working. They can use Forgot Password to set one again.
 - **Web platform** — not supported; native dependencies prevent it from rendering correctly.
 
 ## Architecture Notes

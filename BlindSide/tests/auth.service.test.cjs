@@ -1,4 +1,4 @@
-// Verifies registration ordering, username conflicts, rollback behavior, and actionable errors.
+// Verifies registration ordering, username conflicts, rollback behavior, Google sign-in, and actionable errors.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -11,6 +11,8 @@ const authUser = { uid: 'new-user-id', email: 'new@example.com' };
 let commitError;
 let cleanupError;
 let writes;
+let googleIdToken;
+const authInstance = { currentUser: null };
 
 const authMock = {
   createUserWithEmailAndPassword: async (_auth, email, password) => {
@@ -22,6 +24,13 @@ const authMock = {
     if (cleanupError) throw cleanupError;
   },
   signInWithEmailAndPassword: async () => ({ user: authUser }),
+  GoogleAuthProvider: {
+    credential: (idToken) => ({ providerId: 'google.com', idToken }),
+  },
+  signInWithCredential: async (_auth, credential) => {
+    events.push(['signInWithCredential', credential.idToken]);
+    return { user: authUser };
+  },
   signOut: async () => {
     events.push(['signOut']);
   },
@@ -63,7 +72,18 @@ function loadAuthService() {
         buildUserDocument: ({ uid, username }) => ({ uid, username }),
       };
     }
-    if (request === './FirebaseConfig') return { auth: 'auth', db: 'db' };
+    if (request === './FirebaseConfig') return { auth: authInstance, db: 'db' };
+    if (request === './GoogleSignInService') {
+      return {
+        requestGoogleIdToken: async () => {
+          events.push(['googlePicker']);
+          return googleIdToken;
+        },
+        signOutOfGoogle: async () => {
+          events.push(['googleSignOut']);
+        },
+      };
+    }
     if (request === './FirestoreService') {
       return { COLLECTIONS: { users: 'users', usernames: 'usernames' } };
     }
@@ -74,13 +94,21 @@ function loadAuthService() {
   return loadedModule.exports;
 }
 
-const { registerUser } = loadAuthService();
+const {
+  completeProfile,
+  logoutUser,
+  registerUser,
+  signInWithGoogle,
+  usesPasswordSignIn,
+} = loadAuthService();
 
 beforeEach(() => {
   events.length = 0;
   writes = [];
   commitError = null;
   cleanupError = null;
+  googleIdToken = 'google-id-token';
+  authInstance.currentUser = null;
 });
 
 test('registration creates Auth first, then atomically writes username and profile', async () => {
@@ -138,4 +166,60 @@ test('invalid usernames are rejected before any Auth account is created', async 
     { code: 'auth/invalid-username' },
   );
   assert.deepEqual(events, []);
+});
+
+test('Google sign-in exchanges the Google ID token for a Firebase credential', async () => {
+  const user = await signInWithGoogle();
+
+  assert.equal(user, authUser);
+  assert.deepEqual(events, [['googlePicker'], ['signInWithCredential', 'google-id-token']]);
+});
+
+test('closing the Google account picker signs nobody in', async () => {
+  googleIdToken = null;
+
+  assert.equal(await signInWithGoogle(), null);
+  assert.deepEqual(events, [['googlePicker']]);
+});
+
+test('completing a Google profile reserves the username without creating an Auth account', async () => {
+  authInstance.currentUser = { uid: 'google-user-id' };
+
+  await completeProfile('  Player.One ');
+
+  assert.deepEqual(events.map(([event]) => event), ['createTransaction', 'set', 'set', 'commit']);
+  assert.deepEqual(writes.map(({ reference }) => reference), [
+    'usernames/player.one', 'users/google-user-id',
+  ]);
+});
+
+test('a taken username during profile completion keeps the Google account signed in', async () => {
+  authInstance.currentUser = { uid: 'google-user-id' };
+  commitError = Object.assign(new Error('Missing or insufficient permissions.'), {
+    code: 'permission-denied',
+  });
+
+  await assert.rejects(completeProfile('Taken'), { code: 'auth/username-already-in-use' });
+  assert.ok(!events.some(([event]) => event === 'deleteAuth' || event === 'signOut'));
+});
+
+test('profile completion rejects invalid usernames before writing', async () => {
+  authInstance.currentUser = { uid: 'google-user-id' };
+
+  await assert.rejects(completeProfile('no spaces'), { code: 'auth/invalid-username' });
+  assert.deepEqual(events, []);
+});
+
+test('password sign-in is detected from the provider list', () => {
+  assert.equal(usesPasswordSignIn({ providerData: [{ providerId: 'password' }] }), true);
+  assert.equal(usesPasswordSignIn({ providerData: [{ providerId: 'google.com' }] }), false);
+  assert.equal(usesPasswordSignIn({
+    providerData: [{ providerId: 'google.com' }, { providerId: 'password' }],
+  }), true);
+});
+
+test('logging out clears the cached Google account before signing out of Firebase', async () => {
+  await logoutUser();
+
+  assert.deepEqual(events, [['googleSignOut'], ['signOut']]);
 });

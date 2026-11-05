@@ -21,7 +21,7 @@ import colors from '../theme/colors';
 import radii from '../theme/radii';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
-import { deleteAccount, getAuthErrorMessage, logoutUser } from '../services/AuthService';
+import { deleteAccount, getAuthErrorMessage, logoutUser, usesPasswordSignIn } from '../services/AuthService';
 import { auth } from '../services/FirebaseConfig';
 import {
   getCompletedSoloSessions,
@@ -337,6 +337,7 @@ export default function ProfileScreen({ navigation }) {
       <DeleteAccountOverlay
         visible={showDeleteAccount}
         isDeleting={isDeletingAccount}
+        requiresPassword={usesPasswordSignIn(auth.currentUser)}
         errorMessage={deleteAccountError}
         onCancel={() => setShowDeleteAccount(false)}
         onConfirm={handleDeleteAccount}

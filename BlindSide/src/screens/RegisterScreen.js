@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import AuthLayout from '../components/AuthLayout';
 import AuthTextField from '../components/AuthTextField';
+import GoogleButton from '../components/GoogleButton';
 import PrimaryButton from '../components/PrimaryButton';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
-import { getAuthErrorMessage, registerUser } from '../services/AuthService';
+import { getAuthErrorMessage, registerUser, signInWithGoogle } from '../services/AuthService';
+import { isGoogleSignInAvailable } from '../services/GoogleSignInService';
 import { isValidUsername, USERNAME_RULES_MESSAGE } from '../models/User';
 
 export default function RegisterScreen({
@@ -17,6 +19,7 @@ export default function RegisterScreen({
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   const handleRegister = async () => {
     if (!username.trim() || !email.trim() || !password) {
@@ -40,6 +43,20 @@ export default function RegisterScreen({
     } finally {
       setIsSubmitting(false);
       onRegistrationStateChange(false);
+    }
+  };
+
+  // On success the auth listener swaps this screen out, so state is only reset on failure.
+  const handleGooglePress = async () => {
+    setErrorMessage('');
+    setIsGoogleSubmitting(true);
+
+    try {
+      const user = await signInWithGoogle();
+      if (!user) setIsGoogleSubmitting(false);
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+      setIsGoogleSubmitting(false);
     }
   };
 
@@ -98,8 +115,23 @@ export default function RegisterScreen({
       <PrimaryButton
         title={isSubmitting ? 'Creating Account...' : 'Register'}
         onPress={handleRegister}
-        disabled={isSubmitting}
+        disabled={isSubmitting || isGoogleSubmitting}
       />
+      {/* Google is hidden in Expo Go, where the native sign-in module doesn't exist. */}
+      {isGoogleSignInAvailable ? (
+        <>
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+          <GoogleButton
+            title={isGoogleSubmitting ? 'Opening Google...' : 'Sign up with Google'}
+            onPress={handleGooglePress}
+            disabled={isSubmitting || isGoogleSubmitting}
+          />
+        </>
+      ) : null}
       {/* This link returns the user to the login screen inside the same auth stack. */}
       <Text
         style={[styles.link, isSubmitting && styles.disabledLink]}
@@ -144,5 +176,20 @@ const styles = StyleSheet.create({
   },
   disabledLink: {
     opacity: 0.5,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.electricBlue,
+  },
+  dividerText: {
+    color: colors.white,
+    fontFamily: typography.body,
+    fontSize: 12,
   },
 });

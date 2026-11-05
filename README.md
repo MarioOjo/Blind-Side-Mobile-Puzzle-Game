@@ -21,11 +21,11 @@ Before starting, the pair picks how deep questions may go. Questions always star
 ## What's New in v1.3.2
 
 - **Matching sign-in screens** — Create Account now looks like Log In, scrolls with the keyboard open, and has a show-password toggle. Placeholder text is faded so it no longer looks like typed text.
+- **Download the APK** — [install BlindSide v1.3.2 on Android](https://expo.dev/accounts/marioojo/projects/BlindSide/builds/5165441a-5dfd-44de-83f2-7f0137647990) (open the link on your phone).
 
 ## What's New in v1.3.1
 
 - **Google button removed** — the login screen no longer shows "Continue with Google", which was never wired up and only showed an error. Sign in with email and password.
-- **Download the APK** — [install BlindSide on Android](https://expo.dev/accounts/marioojo/projects/BlindSide/builds/4aa3dbb9-f0ce-463e-947c-9ceb05b4b20c) (open the link on your phone).
 
 ## What's New in v1.3
 
@@ -128,7 +128,7 @@ Scan the QR code with Expo Go (Android/iOS), or press `a` for Android emulator, 
 
 ## Building the Android APK
 
-To just install the latest build, open the [v1.3.1 APK link](https://expo.dev/accounts/marioojo/projects/BlindSide/builds/4aa3dbb9-f0ce-463e-947c-9ceb05b4b20c) on an Android phone. To build your own:
+To just install the latest build, open the [v1.3.2 APK link](https://expo.dev/accounts/marioojo/projects/BlindSide/builds/5165441a-5dfd-44de-83f2-7f0137647990) on an Android phone. To build your own:
 
 Builds run in the cloud on EAS Build with a free [Expo account](https://expo.dev/signup).
 

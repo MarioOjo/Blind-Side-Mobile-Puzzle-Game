@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.1 — New app icon
+
+- **New launcher icon** drawn from the same puzzle mark as the in-app logo and splash animation (`PuzzleMark`), so the icon, Log In badge, and splash all match. The mark is larger than before and sits inside Android's adaptive-icon safe zone, so circle and rounded-square launchers don't crop it.
+- **Splash screen** now uses the `expo-splash-screen` config plugin with a dedicated transparent mark (`assets/splash-icon.png`, shown 160 px wide on navy). The unused Expo placeholder splash image is replaced.
+- Updated `icon.png`, `adaptive-icon.png`, `splash-icon.png`, and `favicon.png`.
+
 ## v1.4.0 — Sign in with Google
 
 - **Google sign-in on Log In and Create Account.** Uses `@react-native-google-signin/google-signin` to get a Google ID token, then signs in to Firebase with it. The button only appears when the native module and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` are both present, so Expo Go hides it instead of crashing.

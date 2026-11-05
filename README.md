@@ -18,6 +18,10 @@ Before starting, the pair picks how deep questions may go. Questions always star
 
 > Note: this cooperative, pass-and-play direction was a deliberate pivot from an earlier competitive "beat their time" concept, made in response to progress-milestone feedback that the original design didn't sufficiently support real-life social connection.
 
+## What's New in v1.3.2
+
+- **Matching sign-in screens** — Create Account now looks like Log In, scrolls with the keyboard open, and has a show-password toggle. Placeholder text is faded so it no longer looks like typed text.
+
 ## What's New in v1.3.1
 
 - **Google button removed** — the login screen no longer shows "Continue with Google", which was never wired up and only showed an error. Sign in with email and password.

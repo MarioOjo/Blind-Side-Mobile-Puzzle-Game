@@ -71,7 +71,7 @@ export default function SoloCompletionScreen({ navigation, route }) {
           <Ionicons
             name={results.saveError ? 'cloud-offline-outline' : 'speedometer-outline'}
             size={20}
-            color={results.saveError || results.bestUnavailable ? '#FCA5A5' : colors.neonCyan}
+            color={results.saveError || results.bestUnavailable ? colors.error : colors.neonCyan}
           />
           <Text
             style={[
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(6,182,212,0.08)',
   },
   warningBanner: {
-    borderColor: '#FCA5A5',
+    borderColor: colors.error,
     backgroundColor: 'rgba(252,165,165,0.08)',
   },
   bestText: {
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   warningText: {
-    color: '#FCA5A5',
+    color: colors.error,
   },
   actions: {
     marginTop: 22,

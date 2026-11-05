@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   soloButton: {
-    backgroundColor: 'rgba(251,191,36,0.12)',
+    backgroundColor: 'rgba(250,204,21,0.12)',
   },
   coopButton: {
     backgroundColor: 'rgba(6,182,212,0.12)',
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   errorText: {
-    color: '#FCA5A5',
+    color: colors.error,
     fontFamily: typography.body,
     fontSize: 11,
     lineHeight: 16,

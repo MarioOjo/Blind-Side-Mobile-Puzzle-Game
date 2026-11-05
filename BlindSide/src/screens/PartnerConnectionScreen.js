@@ -216,7 +216,7 @@ export default function PartnerConnectionScreen({ currentUser, navigation } = {}
         <TextInput
           style={styles.input}
           placeholder="Username"
-          placeholderTextColor="rgba(255,255,255,0.5)"
+          placeholderTextColor={colors.textMuted}
           autoCapitalize="none"
           autoCorrect={false}
           value={username}
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   message: {
-    color: '#FCA5A5',
+    color: colors.error,
     fontFamily: typography.body,
     fontSize: 14,
     textAlign: 'center',

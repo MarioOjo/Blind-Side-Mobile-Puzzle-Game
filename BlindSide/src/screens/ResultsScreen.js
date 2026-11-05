@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   errorText: {
-    color: '#FCA5A5',
+    color: colors.error,
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',

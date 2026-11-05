@@ -18,6 +18,7 @@ import PuzzleSessionListItem from '../components/PuzzleSessionListItem';
 import SoloPuzzleStatRow from '../components/SoloPuzzleStatRow';
 import DeleteAccountOverlay from '../components/DeleteAccountOverlay';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 import { deleteAccount, getAuthErrorMessage, logoutUser } from '../services/AuthService';
@@ -286,7 +287,7 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.statLabel}>Questions Discussed</Text>
         </Card>
         <Card style={styles.statCard}>
-          <Ionicons name="play-skip-forward-outline" size={22} color="rgba(255,255,255,0.45)" />
+          <Ionicons name="play-skip-forward-outline" size={22} color={colors.textMuted} />
           <Text style={styles.statValue}>{profileData?.stats.questionsSkipped ?? 0}</Text>
           <Text style={styles.statLabel}>Questions Skipped</Text>
         </Card>
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: colors.neonCyan,
-    borderRadius: 999,
+    borderRadius: radii.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
@@ -455,7 +456,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyStats: {
-    color: 'rgba(255,255,255,0.6)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 12,
     textAlign: 'center',
@@ -466,7 +467,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   stateText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
     lineHeight: 20,

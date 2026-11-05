@@ -7,6 +7,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.neonCyan,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     padding: 24,
     alignItems: 'center',
     gap: 12,
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   instructionText: {
-    color: 'rgba(255,255,255,0.62)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 28,
     backgroundColor: colors.neonCyan,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     minWidth: 180,
   },
   resumeButtonPressed: {
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   exitButtonLabel: {
-    color: 'rgba(255,255,255,0.55)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
     textDecorationLine: 'underline',

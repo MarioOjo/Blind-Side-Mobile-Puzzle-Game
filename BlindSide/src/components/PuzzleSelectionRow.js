@@ -2,6 +2,7 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 
 export default function PuzzleSelectionRow({
@@ -47,7 +48,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.electricBlue,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   rowPressed: {
     opacity: 0.72,
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     backgroundColor: 'rgba(6,182,212,0.1)',
-    borderRadius: 6,
+    borderRadius: radii.sm,
   },
   thumbnail: {
     width: '100%',
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
   },
   supportingText: {
     marginTop: 3,
-    color: 'rgba(255,255,255,0.62)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 12,
   },

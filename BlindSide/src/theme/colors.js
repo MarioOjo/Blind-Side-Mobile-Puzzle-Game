@@ -12,7 +12,9 @@ const colors = {
   white: '#FFFFFF',
   // Card surface color that sits one step above the background.
   card: '#151C2C',
-  // Faded white for placeholders, footers, and other secondary text.
+  // Softer white for supporting text that still needs to be easy to read.
+  textSecondary: 'rgba(255,255,255,0.65)',
+  // Faded white for placeholders, hints, dates, and footers.
   textMuted: 'rgba(255,255,255,0.5)',
   // Soft red for inline error messages.
   error: '#FCA5A5',

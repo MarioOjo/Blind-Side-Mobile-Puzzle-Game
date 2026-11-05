@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import PrimaryButton from '../components/PrimaryButton';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import shadows from '../theme/shadows';
 import typography from '../theme/typography';
 import { formatElapsedTime } from '../utils/soloRun';
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.victoryGold,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   heading: {
     marginTop: 18,
@@ -146,10 +147,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.electricBlue,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   statLabel: {
-    color: 'rgba(255,255,255,0.58)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 11,
   },
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: colors.neonCyan,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     backgroundColor: 'rgba(6,182,212,0.08)',
   },
   warningBanner: {

@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import PrimaryButton from '../components/PrimaryButton';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import shadows from '../theme/shadows';
 import typography from '../theme/typography';
 import { formatElapsedTime } from '../utils/soloRun';
@@ -55,7 +56,7 @@ export default function CooperativeCompletionScreen({ navigation, route }) {
         <Text style={styles.puzzleName}>{results.puzzleName ?? 'Cooperative puzzle'}</Text>
 
         <View style={styles.partnerRow}>
-          <Ionicons name="person-outline" size={14} color="rgba(255,255,255,0.45)" />
+          <Ionicons name="person-outline" size={14} color={colors.textMuted} />
           <Text style={styles.partnerText}>with {results.partnerName ?? 'Partner'}</Text>
         </View>
 
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.neonCyan,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   heading: {
     marginTop: 18,
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   partnerText: {
-    color: 'rgba(255,255,255,0.45)',
+    color: colors.textMuted,
     fontFamily: typography.body,
     fontSize: 13,
   },
@@ -152,10 +153,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.electricBlue,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   statLabel: {
-    color: 'rgba(255,255,255,0.58)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 11,
   },

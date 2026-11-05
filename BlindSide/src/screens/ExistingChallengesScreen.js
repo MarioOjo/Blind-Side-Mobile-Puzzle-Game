@@ -201,15 +201,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   milestoneLabelLocked: {
-    color: 'rgba(255,255,255,0.55)',
+    color: colors.textSecondary,
   },
   milestoneDescription: {
-    color: 'rgba(255,255,255,0.45)',
+    color: colors.textMuted,
     fontFamily: typography.body,
     fontSize: 12,
   },
   stateText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
   },

@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 5,
-    color: 'rgba(255,255,255,0.62)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
   },
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   stateText: {
-    color: 'rgba(255,255,255,0.65)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',

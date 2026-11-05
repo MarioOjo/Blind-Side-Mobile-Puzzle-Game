@@ -30,6 +30,7 @@ import {
   updateSoloSession,
 } from '../services/FirestoreService';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 import { applyGlobalOrientationPolicy } from '../utils/orientationPolicy';
@@ -860,7 +861,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   stateText: {
-    color: 'rgba(255,255,255,0.68)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
   },
@@ -882,7 +883,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: 999,
+    borderRadius: radii.pill,
     backgroundColor: colors.victoryGold,
   },
   saveWarningText: {
@@ -907,7 +908,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.neonCyan,
-    borderRadius: 12,
+    borderRadius: radii.md,
     padding: 24,
   },
   orientationTitle: {
@@ -916,7 +917,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
   },
   orientationText: {
-    color: 'rgba(255,255,255,0.68)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',

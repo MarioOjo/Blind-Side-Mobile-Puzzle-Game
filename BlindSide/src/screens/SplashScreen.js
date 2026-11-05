@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
 import Svg, { G, Path } from 'react-native-svg';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     bottom: 64,
     width: 128,
     height: 3,
-    borderRadius: 999,
+    borderRadius: radii.pill,
     backgroundColor: `${colors.electricBlue}33`,
     overflow: 'hidden',
   },

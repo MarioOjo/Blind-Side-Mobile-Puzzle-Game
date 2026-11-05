@@ -20,6 +20,7 @@ Before starting, the pair picks how deep questions may go. Questions always star
 
 ## What's New in v1.4
 
+- **New app icon (v1.4.1)** — the home-screen icon and splash now use the same cyan puzzle mark as the app's logo, and the icon is larger.
 - **Sign in with Google** — Log In and Create Account now have a working Google button. First-time Google players choose a username before they start. Google sign-in works in the installed APK, not in Expo Go.
 - **Download the APK** — [install BlindSide v1.4.0 on Android](https://expo.dev/accounts/marioojo/projects/BlindSide/builds/031fa7c5-e0e7-4be4-816a-52ffb8cb99ee) (open the link on your phone).
 

@@ -1,4 +1,4 @@
-// Password-confirmed account deletion dialog for the Profile screen. Styled to match
+// Identity-confirmed account deletion dialog (password, or Google for Google-only players) for the Profile screen. Styled to match
 // ExitConfirmOverlay, but rendered in a Modal so it covers the scrolling profile
 // content and the tab bar, and stays usable with the keyboard open.
 import { useEffect, useState } from 'react';
@@ -21,6 +21,7 @@ import typography from '../theme/typography';
 export default function DeleteAccountOverlay({
   visible,
   isDeleting,
+  requiresPassword = true,
   errorMessage,
   onCancel,
   onConfirm,
@@ -47,30 +48,36 @@ export default function DeleteAccountOverlay({
             connections. Puzzles you finished with a partner stay in their history.
             This can't be undone.
           </Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm with your password"
-            placeholderTextColor={colors.textMuted}
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="current-password"
-            editable={!isDeleting}
-            value={password}
-            onChangeText={setPassword}
-          />
+          {requiresPassword ? (
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm with your password"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+              autoCapitalize="none"
+              autoComplete="current-password"
+              editable={!isDeleting}
+              value={password}
+              onChangeText={setPassword}
+            />
+          ) : (
+            <Text style={styles.instructionText}>
+              You'll be asked to confirm with your Google account.
+            </Text>
+          )}
           {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
           <Pressable
             style={({ pressed }) => [
               styles.deleteButton,
-              (pressed || isDeleting || !password) && styles.deleteButtonDimmed,
+              (pressed || isDeleting || (requiresPassword && !password)) && styles.deleteButtonDimmed,
             ]}
             accessibilityRole="button"
             accessibilityLabel="Permanently delete account"
-            disabled={isDeleting || !password}
+            disabled={isDeleting || (requiresPassword && !password)}
             onPress={() => onConfirm(password)}
           >
             <Text style={styles.deleteButtonLabel}>
-              {isDeleting ? 'Deleting...' : 'Delete Permanently'}
+              {isDeleting ? 'Deleting...' : requiresPassword ? 'Delete Permanently' : 'Confirm with Google & Delete'}
             </Text>
           </Pressable>
           <Pressable

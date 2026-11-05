@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.4.0 — Sign in with Google
+
+- **Google sign-in on Log In and Create Account.** Uses `@react-native-google-signin/google-signin` to get a Google ID token, then signs in to Firebase with it. The button only appears when the native module and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` are both present, so Expo Go hides it instead of crashing.
+- **Choose a username.** A first-time Google player has no BlindSide profile, so `RootNavigator` now checks for one and shows the new `ChooseUsernameScreen` until a username is reserved. Profiles are written by the same transaction as email registration (`writeProfile`), so Firestore rules are unchanged. "Use a different account" signs out.
+- **Delete Account for Google players.** Google-only accounts confirm with the Google account picker instead of a password. Accounts with a password keep the password prompt.
+- **Log out clears the Google account choice,** so the next sign-in shows the account picker.
+- New `GoogleSignInService` wraps the native module and maps its errors (cancelled, Play services missing, misconfigured SHA-1) to clear messages.
+- `app.json` registers the Google Sign-In config plugin. Its required `iosUrlScheme` is the reversed Web client ID; replace it with an iOS client ID before any iPhone build.
+- 7 new AuthService tests (68 total).
+
+### Deploying v1.4
+
+1. In the Firebase console, enable the Google provider and set its support email.
+2. Run `npx eas-cli credentials` → Android → preview, and copy the SHA-1 fingerprint.
+3. In Project settings, add an Android app with package `com.marioojo.blindside` and that SHA-1.
+4. Make sure `.env` has `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (see `.env.example`).
+5. `npm run build:apk`. Google sign-in only works in this build, not in Expo Go.
+
 ## v1.3.3 — Consistent corners and faded text
 
 - **Corner radius scale.** New `src/theme/radii.js` (`sm` 8, `md` 12, `lg` 16, `pill`) replaces 12 different hard-coded corner sizes. Circular avatars and badges keep a radius of half their size.

@@ -2,10 +2,12 @@ import { useRef, useState } from 'react';
 import { Alert, Keyboard, View, Text, StyleSheet } from 'react-native';
 import AuthLayout from '../components/AuthLayout';
 import AuthTextField from '../components/AuthTextField';
+import GoogleButton from '../components/GoogleButton';
 import PrimaryButton from '../components/PrimaryButton';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
-import { getAuthErrorMessage, loginUser, sendPasswordReset } from '../services/AuthService';
+import { getAuthErrorMessage, loginUser, sendPasswordReset, signInWithGoogle } from '../services/AuthService';
+import { isGoogleSignInAvailable } from '../services/GoogleSignInService';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -14,6 +16,7 @@ export default function LoginScreen({ navigation }) {
   const [resetMessage, setResetMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const emailInputRef = useRef(null);
   const passwordInputRef = useRef(null);
 
@@ -32,6 +35,21 @@ export default function LoginScreen({ navigation }) {
     } catch (error) {
       setErrorMessage(getAuthErrorMessage(error));
       setIsSubmitting(false);
+    }
+  };
+
+  // On success the auth listener swaps this screen out, so state is only reset on failure.
+  const handleGooglePress = async () => {
+    setErrorMessage('');
+    setResetMessage('');
+    setIsGoogleSubmitting(true);
+
+    try {
+      const user = await signInWithGoogle();
+      if (!user) setIsGoogleSubmitting(false);
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+      setIsGoogleSubmitting(false);
     }
   };
 
@@ -106,7 +124,7 @@ export default function LoginScreen({ navigation }) {
       <PrimaryButton
         title={isSubmitting ? 'Logging In...' : 'Log In'}
         onPress={handleLogin}
-        disabled={isSubmitting}
+        disabled={isSubmitting || isGoogleSubmitting}
       />
       <Text
         style={[styles.forgotLink, isSendingReset && styles.forgotLinkDisabled]}
@@ -114,12 +132,20 @@ export default function LoginScreen({ navigation }) {
       >
         {isSendingReset ? 'Sending...' : 'Forgot Password?'}
       </Text>
-      {/* The divider separates logging in from creating a new account. */}
+      {/* The divider separates email login from the other ways in. */}
       <View style={styles.dividerRow}>
         <View style={styles.dividerLine} />
         <Text style={styles.dividerText}>OR</Text>
         <View style={styles.dividerLine} />
       </View>
+      {/* Google is hidden in Expo Go, where the native sign-in module doesn't exist. */}
+      {isGoogleSignInAvailable ? (
+        <GoogleButton
+          title={isGoogleSubmitting ? 'Opening Google...' : 'Continue with Google'}
+          onPress={handleGooglePress}
+          disabled={isSubmitting || isGoogleSubmitting}
+        />
+      ) : null}
       {/* Secondary action routes to the registration screen inside the auth stack. */}
       <PrimaryButton title="Create Account" variant="outline" onPress={() => navigation.navigate('Register')} />
     </AuthLayout>

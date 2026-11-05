@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.3 — Consistent corners and faded text
+
+- **Corner radius scale.** New `src/theme/radii.js` (`sm` 8, `md` 12, `lg` 16, `pill`) replaces 12 different hard-coded corner sizes. Circular avatars and badges keep a radius of half their size.
+- **Two faded-text shades.** New `textSecondary` (65% white) for supporting text and the existing `textMuted` (50% white) for hints, dates, and placeholders replace about a dozen slightly different opacities. The locked-milestone padlock keeps its dimmer disabled look.
+
 ## v1.3.2 — Consistent auth screens and colours
 
 - **Create Account now matches Log In.** Both screens share one layout (`AuthLayout`): the puzzle badge, the two-tone wordmark, the tagline, and the footer. Create Account previously had a plain logo and plain input boxes, and it did not scroll, so the keyboard or a landscape screen could hide its fields.

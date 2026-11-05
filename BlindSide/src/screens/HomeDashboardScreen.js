@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Card from '../components/Card';
 import PuzzleSessionListItem from '../components/PuzzleSessionListItem';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 import { auth } from '../services/FirebaseConfig';
@@ -249,7 +250,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   welcomeText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 14,
   },
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
   },
   modeCard: {
     padding: 10,
-    borderRadius: 12,
+    borderRadius: radii.md,
   },
   soloCard: {
     borderColor: colors.victoryGold,
@@ -308,7 +309,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   modeCardSubtitle: {
-    color: 'rgba(255,255,255,0.45)',
+    color: colors.textMuted,
     fontFamily: typography.body,
     fontSize: 11,
     marginTop: 1,
@@ -320,7 +321,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     marginTop: 4,
   },
   modeCardButtonPressed: {
@@ -351,7 +352,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 6,
     paddingHorizontal: 4,
-    borderRadius: 6,
+    borderRadius: radii.sm,
   },
   partnerRowPressed: {
     backgroundColor: 'rgba(6,182,212,0.08)',
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   morePartnersText: {
-    color: 'rgba(255,255,255,0.35)',
+    color: colors.textMuted,
     fontFamily: typography.body,
     fontSize: 11,
     marginTop: 4,
@@ -386,7 +387,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   stateText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 11,
     lineHeight: 16,

@@ -2,6 +2,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 import { formatElapsedTime } from '../utils/soloRun';
 import { humanizeCatalogValue } from '../utils/puzzleCatalog';
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: 'rgba(37,99,235,0.7)',
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   icon: {
     width: 36,
@@ -48,7 +49,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(6,182,212,0.08)',
-    borderRadius: 6,
+    borderRadius: radii.sm,
   },
   copy: {
     flex: 1,
@@ -61,7 +62,7 @@ const styles = StyleSheet.create({
   },
   metadata: {
     marginTop: 2,
-    color: 'rgba(255,255,255,0.58)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 11,
   },
@@ -69,7 +70,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   timeLabel: {
-    color: 'rgba(255,255,255,0.5)',
+    color: colors.textMuted,
     fontFamily: typography.body,
     fontSize: 9,
   },

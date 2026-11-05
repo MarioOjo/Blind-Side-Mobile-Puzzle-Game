@@ -18,6 +18,7 @@ import {
   getTrayPageLayout,
 } from '../utils/jigsaw';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 import { formatElapsedTime } from '../utils/soloRun';
@@ -379,7 +380,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   loadingText: {
-    color: 'rgba(255,255,255,0.68)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
   },
@@ -389,7 +390,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#080D18',
     borderWidth: 1.5,
     borderColor: colors.neonCyan,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   boardGuideImage: {
     ...StyleSheet.absoluteFillObject,
@@ -407,7 +408,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.electricBlue,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   trayHeader: {
     height: TRAY_HEADER_HEIGHT,
@@ -455,7 +456,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.neonCyan,
-    borderRadius: 6,
+    borderRadius: radii.sm,
   },
   pauseButtonPressed: {
     backgroundColor: 'rgba(6,182,212,0.18)',
@@ -483,7 +484,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.electricBlue,
-    borderRadius: 6,
+    borderRadius: radii.sm,
   },
   pageButtonDisabled: {
     opacity: 0.3,

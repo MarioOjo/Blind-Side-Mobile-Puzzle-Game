@@ -6,6 +6,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 import shadows from '../theme/shadows';
 import scale from '../theme/overlayScale';
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.neonCyan,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     paddingVertical: scale.cardPaddingVertical,
     paddingHorizontal: scale.cardPaddingHorizontal,
     alignItems: 'center',
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
     lineHeight: scale.headingFontSize + 5,
   },
   instructionText: {
-    color: 'rgba(255,255,255,0.62)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: scale.bodyFontSize,
     textAlign: 'center',
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
     paddingVertical: scale.buttonPaddingVertical,
     paddingHorizontal: scale.buttonPaddingHorizontal,
     backgroundColor: colors.neonCyan,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     minWidth: scale.buttonMinWidth,
   },
   confirmButtonPressed: {
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
     minHeight: 38,
     borderWidth: 1.5,
     borderColor: colors.electricBlue,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     paddingHorizontal: 10,
     backgroundColor: 'transparent',
   },
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   skipButtonLabel: {
-    color: 'rgba(255,255,255,0.45)',
+    color: colors.textMuted,
     fontFamily: typography.body,
     fontSize: 11.5,
     textDecorationLine: 'underline',

@@ -15,6 +15,7 @@ import {
   sendPartnerRequest,
 } from '../services/PartnerService';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 
 const PARTNER_ERROR_MESSAGES = {
@@ -323,7 +324,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderWidth: 1,
     borderColor: colors.electricBlue,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     paddingHorizontal: 12,
     color: colors.white,
     fontFamily: typography.body,
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   pendingText: {
-    color: 'rgba(255,255,255,0.65)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
   },

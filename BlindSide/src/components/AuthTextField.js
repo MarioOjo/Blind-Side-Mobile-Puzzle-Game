@@ -2,6 +2,7 @@ import { forwardRef, useState } from 'react';
 import { View, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 
 // Icon-led input row shared by Login and Register. Password fields get a reveal toggle.
@@ -49,7 +50,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.electricBlue,
-    borderRadius: 12,
+    borderRadius: radii.md,
     paddingHorizontal: 12,
     backgroundColor: colors.card,
   },

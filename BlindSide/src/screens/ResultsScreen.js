@@ -22,6 +22,7 @@ import { presentSoloResult, presentCoopResult } from '../utils/challenges';
 import { indexProfilesByUid, getSessionPartnerId } from '../utils/cooperativeSessions';
 import { formatElapsedTime } from '../utils/soloRun';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -54,7 +55,7 @@ function SoloResultRow({ result }) {
         {result.category ? <Chip label={result.category} /> : null}
       </View>
       <View style={styles.resultStats}>
-        <Ionicons name="time-outline" size={13} color="rgba(255,255,255,0.45)" />
+        <Ionicons name="time-outline" size={13} color={colors.textMuted} />
         <Text style={styles.resultStatText}>{formatElapsedTime(result.completionTime)}</Text>
       </View>
     </Card>
@@ -70,22 +71,22 @@ function CoopResultRow({ result }) {
         <Text style={styles.resultDate}>{formatDate(result.completedAt)}</Text>
       </View>
       <View style={styles.resultPartnerRow}>
-        <Ionicons name="person-outline" size={12} color="rgba(255,255,255,0.45)" />
+        <Ionicons name="person-outline" size={12} color={colors.textMuted} />
         <Text style={styles.resultPartnerText}>with {result.partnerName}</Text>
         {result.tier ? <Chip label={result.tier} /> : null}
       </View>
       <View style={styles.resultStatsRow}>
         <View style={styles.resultStats}>
-          <Ionicons name="time-outline" size={13} color="rgba(255,255,255,0.45)" />
+          <Ionicons name="time-outline" size={13} color={colors.textMuted} />
           <Text style={styles.resultStatText}>{formatElapsedTime(result.completionTime)}</Text>
         </View>
         <View style={styles.resultStats}>
-          <Ionicons name="swap-horizontal-outline" size={13} color="rgba(255,255,255,0.45)" />
+          <Ionicons name="swap-horizontal-outline" size={13} color={colors.textMuted} />
           <Text style={styles.resultStatText}>{result.turnCount} turns</Text>
         </View>
         {totalQ > 0 ? (
           <View style={styles.resultStats}>
-            <Ionicons name="chatbubble-ellipses-outline" size={13} color="rgba(255,255,255,0.45)" />
+            <Ionicons name="chatbubble-ellipses-outline" size={13} color={colors.textMuted} />
             <Text style={styles.resultStatText}>
               {result.questionsAnswered}/{totalQ} questions
             </Text>
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    borderRadius: 10,
+    borderRadius: radii.md,
     backgroundColor: colors.card,
     padding: 4,
     gap: 4,
@@ -227,14 +228,14 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     paddingVertical: 8,
-    borderRadius: 7,
+    borderRadius: radii.sm,
     alignItems: 'center',
   },
   tabActive: {
     backgroundColor: colors.electricBlue,
   },
   tabText: {
-    color: 'rgba(255,255,255,0.5)',
+    color: colors.textMuted,
     fontFamily: typography.subheading,
     fontSize: 13,
   },
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   resultDate: {
-    color: 'rgba(255,255,255,0.4)',
+    color: colors.textMuted,
     fontFamily: typography.body,
     fontSize: 11,
     flexShrink: 0,
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   resultPartnerText: {
-    color: 'rgba(255,255,255,0.45)',
+    color: colors.textMuted,
     fontFamily: typography.body,
     fontSize: 12,
     flex: 1,
@@ -280,7 +281,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     backgroundColor: 'rgba(37,99,235,0.25)',
-    borderRadius: 999,
+    borderRadius: radii.pill,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
@@ -300,12 +301,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   resultStatText: {
-    color: 'rgba(255,255,255,0.55)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 12,
   },
   stateText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
   },

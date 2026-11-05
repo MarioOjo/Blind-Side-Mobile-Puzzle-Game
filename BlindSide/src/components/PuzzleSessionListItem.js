@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   status: {
-    color: 'rgba(255,255,255,0.6)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 12,
   },
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   lastPlayed: {
-    color: 'rgba(255,255,255,0.5)',
+    color: colors.textMuted,
     fontFamily: typography.body,
     fontSize: 11,
   },

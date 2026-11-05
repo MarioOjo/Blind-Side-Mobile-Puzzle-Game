@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../theme/colors';
+import radii from '../theme/radii';
 import typography from '../theme/typography';
 
 
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.danger,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     padding: 24,
     alignItems: 'center',
     gap: 12,
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   instructionText: {
-    color: 'rgba(255,255,255,0.62)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',
@@ -130,7 +131,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 8,
+    borderRadius: radii.sm,
     paddingHorizontal: 12,
     color: colors.white,
     fontFamily: typography.body,
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 28,
     backgroundColor: colors.danger,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     minWidth: 180,
   },
   deleteButtonDimmed: {
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   cancelButtonLabel: {
-    color: 'rgba(255,255,255,0.55)',
+    color: colors.textSecondary,
     fontFamily: typography.body,
     fontSize: 13,
     textDecorationLine: 'underline',

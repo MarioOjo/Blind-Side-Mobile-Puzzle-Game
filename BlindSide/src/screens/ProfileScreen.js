@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   loadError: {
-    color: '#FCA5A5',
+    color: colors.error,
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',
@@ -496,13 +496,13 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   deleteAccountLabel: {
-    color: '#F87171',
+    color: colors.danger,
     fontFamily: typography.body,
     fontSize: 13,
     textDecorationLine: 'underline',
   },
   logoutError: {
-    color: '#FCA5A5',
+    color: colors.error,
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',

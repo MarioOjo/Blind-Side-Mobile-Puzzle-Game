@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.3.2 — Consistent auth screens and colours
+
+- **Create Account now matches Log In.** Both screens share one layout (`AuthLayout`): the puzzle badge, the two-tone wordmark, the tagline, and the footer. Create Account previously had a plain logo and plain input boxes, and it did not scroll, so the keyboard or a landscape screen could hide its fields.
+- **Shared input fields.** Both screens use `AuthTextField`: an icon in each field and the same rounded border. Create Account also gains the show-password toggle. The email field icon is now an envelope on both screens.
+- **Faded placeholders.** Placeholder text such as "Email" was solid white, so it looked like typed text. It is now faded white, as on the partner search screen.
+- **Named theme colours.** New `textMuted`, `error` (inline error messages), and `danger` (destructive actions such as Delete Account) tokens replace hard-coded values. The Solo button tint on Home now uses the brand Victory Gold instead of a near-match amber.
+
 ## v1.3.1 — Remove the Google sign-in button
 
 - **Removed "Continue with Google" from the login screen.** It was never wired to Google OAuth and only showed an error, so it looked broken. Email and password is the only sign-in method. The unused `GoogleButton` and `GoogleIcon` components are deleted.

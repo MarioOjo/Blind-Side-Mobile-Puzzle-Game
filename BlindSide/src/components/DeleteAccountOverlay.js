@@ -16,7 +16,6 @@ import { Ionicons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
 
-const DANGER = '#F87171';
 
 export default function DeleteAccountOverlay({
   visible,
@@ -39,7 +38,7 @@ export default function DeleteAccountOverlay({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.card}>
-          <Ionicons name="warning-outline" size={36} color={DANGER} />
+          <Ionicons name="warning-outline" size={36} color={colors.danger} />
           <Text style={styles.eyebrow}>DELETE ACCOUNT</Text>
           <Text style={styles.heading}>Delete your BlindSide account?</Text>
           <Text style={styles.instructionText}>
@@ -50,7 +49,7 @@ export default function DeleteAccountOverlay({
           <TextInput
             style={styles.input}
             placeholder="Confirm with your password"
-            placeholderTextColor="rgba(255,255,255,0.5)"
+            placeholderTextColor={colors.textMuted}
             secureTextEntry
             autoCapitalize="none"
             autoComplete="current-password"
@@ -101,14 +100,14 @@ const styles = StyleSheet.create({
     maxWidth: 380,
     backgroundColor: colors.card,
     borderWidth: 1.5,
-    borderColor: DANGER,
+    borderColor: colors.danger,
     borderRadius: 14,
     padding: 24,
     alignItems: 'center',
     gap: 12,
   },
   eyebrow: {
-    color: DANGER,
+    color: colors.danger,
     fontFamily: typography.subheading,
     fontSize: 11,
     letterSpacing: 1.2,
@@ -137,7 +136,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
   },
   errorText: {
-    color: '#FCA5A5',
+    color: colors.error,
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',
@@ -148,7 +147,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingVertical: 12,
     paddingHorizontal: 28,
-    backgroundColor: DANGER,
+    backgroundColor: colors.danger,
     borderRadius: 8,
     minWidth: 180,
   },

@@ -12,6 +12,12 @@ const colors = {
   white: '#FFFFFF',
   // Card surface color that sits one step above the background.
   card: '#151C2C',
+  // Faded white for placeholders, footers, and other secondary text.
+  textMuted: 'rgba(255,255,255,0.5)',
+  // Soft red for inline error messages.
+  error: '#FCA5A5',
+  // Stronger red reserved for destructive actions such as deleting an account.
+  danger: '#F87171',
   // Gradient tokens are grouped here so buttons can stay on-brand.
   gradients: {
     primary: ['#2563EB', '#06B6D4'],

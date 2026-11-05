@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
-import Card from '../components/Card';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import AuthLayout from '../components/AuthLayout';
+import AuthTextField from '../components/AuthTextField';
 import PrimaryButton from '../components/PrimaryButton';
 import colors from '../theme/colors';
 import typography from '../theme/typography';
@@ -43,115 +44,78 @@ export default function RegisterScreen({
   };
 
   return (
-    <View style={styles.container}>
-      {/* Simple wordmark keeps the register screen visually aligned with login. */}
-      <Text style={styles.logo}>BLINDSIDE</Text>
-      {/* The card groups sign-up inputs and the auth action into one panel. */}
-      <Card style={styles.card}>
-        <Text style={styles.heading}>Create Account</Text>
-        {/* Username is the public handle partners search for; the format is enforced in models/User.js. */}
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          placeholderTextColor={colors.white}
-          autoCapitalize="none"
-          editable={!isSubmitting}
-          value={username}
-          onChangeText={(value) => {
-            setUsername(value);
-            setErrorMessage('');
-          }}
-        />
-        {/* Email and password fields are already in place for the upcoming auth implementation. */}
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor={colors.white}
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          editable={!isSubmitting}
-          value={email}
-          onChangeText={(value) => {
-            setEmail(value);
-            setErrorMessage('');
-          }}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor={colors.white}
-          secureTextEntry
-          editable={!isSubmitting}
-          value={password}
-          onChangeText={(value) => {
-            setPassword(value);
-            setErrorMessage('');
-          }}
-        />
-        {errorMessage ? (
-          <View style={styles.errorRow}>
-            <Text style={styles.errorText}>{errorMessage}</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Dismiss registration error"
-              onPress={() => setErrorMessage('')}
-              hitSlop={8}
-            >
-              <Text style={styles.dismissError}>×</Text>
-            </Pressable>
-          </View>
-        ) : null}
-        <PrimaryButton
-          title={isSubmitting ? 'Creating Account...' : 'Register'}
-          onPress={handleRegister}
-          disabled={isSubmitting}
-        />
-        {/* This link returns the user to the login screen inside the same auth stack. */}
-        <Text
-          style={[styles.link, isSubmitting && styles.disabledLink]}
-          onPress={isSubmitting ? undefined : () => navigation.navigate('Login')}
-        >
-          Already have an account? Log In
-        </Text>
-      </Card>
-    </View>
+    <AuthLayout>
+      <Text style={styles.heading}>Create Account</Text>
+      {/* Username is the public handle partners search for; the format is enforced in models/User.js. */}
+      <AuthTextField
+        icon="person-outline"
+        placeholder="Username"
+        autoCapitalize="none"
+        editable={!isSubmitting}
+        value={username}
+        onChangeText={(value) => {
+          setUsername(value);
+          setErrorMessage('');
+        }}
+      />
+      <AuthTextField
+        icon="mail-outline"
+        placeholder="Email"
+        autoCapitalize="none"
+        autoComplete="email"
+        keyboardType="email-address"
+        editable={!isSubmitting}
+        value={email}
+        onChangeText={(value) => {
+          setEmail(value);
+          setErrorMessage('');
+        }}
+      />
+      <AuthTextField
+        icon="lock-closed-outline"
+        placeholder="Password"
+        secure
+        editable={!isSubmitting}
+        value={password}
+        onChangeText={(value) => {
+          setPassword(value);
+          setErrorMessage('');
+        }}
+      />
+      {errorMessage ? (
+        <View style={styles.errorRow}>
+          <Text style={styles.errorText}>{errorMessage}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss registration error"
+            onPress={() => setErrorMessage('')}
+            hitSlop={8}
+          >
+            <Text style={styles.dismissError}>×</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      <PrimaryButton
+        title={isSubmitting ? 'Creating Account...' : 'Register'}
+        onPress={handleRegister}
+        disabled={isSubmitting}
+      />
+      {/* This link returns the user to the login screen inside the same auth stack. */}
+      <Text
+        style={[styles.link, isSubmitting && styles.disabledLink]}
+        onPress={isSubmitting ? undefined : () => navigation.navigate('Login')}
+      >
+        Already have an account? Log In
+      </Text>
+    </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    // Register uses the same centered layout as login for consistency.
-    flex: 1,
-    backgroundColor: colors.midnightNavy,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 24,
-    padding: 24,
-  },
-  logo: {
-    color: colors.neonCyan,
-    fontFamily: typography.logo,
-    fontSize: 28,
-  },
-  card: {
-    width: '100%',
-    gap: 12,
-  },
   heading: {
     color: colors.white,
     fontFamily: typography.heading,
     fontSize: 18,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.electricBlue,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: colors.white,
-    fontFamily: typography.body,
-    minHeight: 44,
   },
   link: {
     color: colors.neonCyan,
@@ -167,13 +131,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     flexShrink: 1,
-    color: '#FCA5A5',
+    color: colors.error,
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',
   },
   dismissError: {
-    color: '#FCA5A5',
+    color: colors.error,
     fontFamily: typography.subheading,
     fontSize: 20,
     lineHeight: 20,
@@ -182,4 +146,3 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 });
-

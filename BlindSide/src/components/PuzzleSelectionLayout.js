@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorText: {
-    color: '#FCA5A5',
+    color: colors.error,
     fontFamily: typography.body,
     fontSize: 13,
     textAlign: 'center',
